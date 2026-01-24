@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: blanketops-environments
-          path: cli/bin/blanketops-environments
+          path: bin/blanketops-environments
           retention-days: 14
 
   static-build:
@@ -73,5 +73,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: blanketops-environments-static
-          path: cli/bin/blanketops-environments-static
+          path: bin/blanketops-environments-static
           retention-days: 14
