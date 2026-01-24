@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/ntlaletsi70/blanketops-environments-mvp/cli/core"
+	"github.com/ntlaletsi70/blanketops-environments-cli/core"
 )
 
 // ClusterUp ensures a Kind cluster exists and is ready.

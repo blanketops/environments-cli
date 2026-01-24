@@ -1,4 +1,4 @@
-module github.com/ntlaletsi70/blanketops-environments-mvp/cli
+module github.com/ntlaletsi70/blanketops-environments-cli
 
 go 1.24.0
 
