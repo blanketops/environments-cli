@@ -30,10 +30,10 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Install dependencies
-        run: cd cli && go mod download
+        run: go mod download
 
       - name: Build BlanketOps CLI (Dynamic)
-        run: cd cli && make build
+        run: make build
 
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
