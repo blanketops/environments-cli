@@ -1,6 +1,7 @@
 # 🚀 BlanketOps Environments — CLI (v0.0.1)
 
-BlanketOps Environments is a CLI-first Kubernetes environment bootstrapper.
+BlanketOps `Environments` CLI is a self-contained, zero-dependency Kubernetes bootstrapper.
+One binary installs your entire software delivery environment:
 
 It provides a fast, repeatable way to bring up a complete software delivery environment for BlanketOps — from a clean machine to a working Kubernetes platform — using a single binary.
 
