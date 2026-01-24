@@ -1,4 +1,4 @@
-name: Build BlanketOps CLI
+name: Build BlanketOps Environments CLI
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Build BlanketOps CLI (Dynamic)
+      - name: Build BlanketOps Environments CLI (Dynamic)
         run: make build
 
       - name: Upload CLI Artifact
