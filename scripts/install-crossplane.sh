@@ -12,7 +12,7 @@ REPO_NAME="${REPO_NAME:-crossplane-stable}"
 REPO_URL="${REPO_URL:-https://charts.crossplane.io/stable}"
 CHART="${CHART:-crossplane}"
 VERSION="${VERSION:-}"   # optional, e.g. "1.9.0"
-TIMEOUT="${TIMEOUT:-5m}"
+TIMEOUT="${TIMEOUT:-10m}"
 
 command -v helm >/dev/null 2>&1 || { echo "helm is required but not found"; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl is required but not found"; exit 1; }

@@ -49,13 +49,13 @@ func InstallAll() error {
 		return err
 	}
 
-	if err := core.InstallCrossplane(); err != nil {
-		return fmt.Errorf("crossplane setup failed: %w", err)
-	}
+	// if err := core.InstallCrossplane(); err != nil {
+	// 	return fmt.Errorf("crossplane setup failed: %w", err)
+	// }
 
-	if err := core.InstallExternalSecrets(); err != nil {
-		return fmt.Errorf("externalsecrets setup failed: %w", err)
-	}
+	// if err := core.InstallExternalSecrets(); err != nil {
+	// 	return fmt.Errorf("externalsecrets setup failed: %w", err)
+	// }
 
 	fmt.Println("📦 Installing Build Strategies...")
 	if err := core.DependenciesInstall([]string{

@@ -167,15 +167,15 @@ func runScript(path string, args ...string) error {
 	return cmd.Run()
 }
 
-func InstallCrossplane() error {
-	fmt.Println("🔐 Running Crossplane Setup Script...")
-	return runScript("scripts/install-crossplane.sh")
-}
+// func InstallCrossplane() error {
+// 	fmt.Println("🔐 Running Crossplane Setup Script...")
+// 	return runScript("scripts/install-crossplane.sh")
+// }
 
-func InstallExternalSecrets() error {
-	fmt.Println("🔐 Running ExternalSecrets Setup Script...")
-	return runScript("scripts/install-externalsecrets.sh")
-}
+// func InstallExternalSecrets() error {
+// 	fmt.Println("🔐 Running ExternalSecrets Setup Script...")
+// 	return runScript("scripts/install-externalsecrets.sh")
+// }
 
 func RunShipwrightCertSetup() error {
 	fmt.Println("🔐 Running Shipwright Certificate Setup Script...")
