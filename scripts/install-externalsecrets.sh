@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 # install-external-secrets.sh
 #
-# Installs External Secrets Operator via Helm into a Kubernetes cluster.
-#
-# Usage:
-#   NAMESPACE=external-secrets VERSION=0.10.7 ./install-external-secrets.sh
-#
-# Design goals:
+# Deterministic install of External Secrets Operator
 # - Kubernetes 1.27+
-# - Explicit CRD installation (avoids schema patch bugs)
-# - Webhooks disabled (local / dev friendly)
-# - Deterministic, repeatable installs
+# - Explicit CRD install
+# - Webhooks DISABLED (local/dev safe)
+# - Idempotent, repeatable
 
 set -euo pipefail
 
@@ -22,109 +17,78 @@ RELEASE="${RELEASE:-external-secrets}"
 REPO_NAME="${REPO_NAME:-external-secrets}"
 REPO_URL="${REPO_URL:-https://charts.external-secrets.io}"
 CHART="${CHART:-external-secrets}"
-
-# 🔒 IMPORTANT:
-# Known-good versions for Kubernetes 1.29+
-# Override if you *know* what you’re doing.
 VERSION="${VERSION:-0.10.7}"
-
 TIMEOUT="${TIMEOUT:-5m}"
 
 # -----------------------------------------------------------------------------
 # Preconditions
 # -----------------------------------------------------------------------------
-command -v helm >/dev/null 2>&1 || {
-  echo "❌ helm is required but not found"
-  exit 1
-}
-
-command -v kubectl >/dev/null 2>&1 || {
-  echo "❌ kubectl is required but not found"
-  exit 1
-}
+command -v helm >/dev/null 2>&1 || { echo "❌ helm not found"; exit 1; }
+command -v kubectl >/dev/null 2>&1 || { echo "❌ kubectl not found"; exit 1; }
 
 # -----------------------------------------------------------------------------
-# Helm repo setup
+# Namespace
 # -----------------------------------------------------------------------------
-kubectl create ns external-secret
+kubectl get ns "$NAMESPACE" >/dev/null 2>&1 || kubectl create ns "$NAMESPACE"
+
+# -----------------------------------------------------------------------------
+# Helm repo
+# -----------------------------------------------------------------------------
 if ! helm repo list | awk '{print $1}' | grep -qx "$REPO_NAME"; then
-  echo "➕ Adding helm repo $REPO_NAME -> $REPO_URL"
   helm repo add "$REPO_NAME" "$REPO_URL"
-else
-  echo "✅ Helm repo $REPO_NAME already present"
 fi
-
-echo "🔄 Updating helm repos..."
 helm repo update
 
 # -----------------------------------------------------------------------------
-# Pre-clean (defensive)
+# Defensive CRD cleanup (prevents storedVersions bugs)
 # -----------------------------------------------------------------------------
-echo "🧹 Ensuring no broken External Secrets CRDs exist..."
-kubectl delete crd externalsecrets.external-secrets.io 2>/dev/null || true
-kubectl delete crd secretstores.external-secrets.io 2>/dev/null || true
-kubectl delete crd clustersecretstores.external-secrets.io 2>/dev/null || true
+echo "🧹 Removing any existing External Secrets CRDs..."
+kubectl get crd | awk '/external-secrets.io/ {print $1}' | xargs -r kubectl delete crd
 
 # -----------------------------------------------------------------------------
-# Step 1: Install CRDs explicitly
+# Install CRDs explicitly (NO controller, NO webhooks)
 # -----------------------------------------------------------------------------
-echo "📦 Installing External Secrets CRDs (version: $VERSION)..."
-
+echo "📦 Installing External Secrets CRDs ($VERSION)..."
 helm template "$RELEASE" "$REPO_NAME/$CHART" \
   --version "$VERSION" \
   --include-crds \
+  --set installCRDs=false \
   --set webhook.create=false \
+  --set certController.create=false \
   | kubectl apply -f -
 
 # -----------------------------------------------------------------------------
-# Step 2: Install / Upgrade controller (NO CRDs)
+# Install controller ONLY (no CRDs, no webhooks)
 # -----------------------------------------------------------------------------
-echo "🚀 Installing/upgrading External Secrets controller..."
-
+echo "🚀 Installing External Secrets controller..."
 helm upgrade --install "$RELEASE" "$REPO_NAME/$CHART" \
   --namespace "$NAMESPACE" \
-  --create-namespace \
   --version "$VERSION" \
   --wait \
   --timeout "$TIMEOUT" \
   --set installCRDs=false \
-  --set webhook.create=false
+  --set webhook.create=false \
+  --set certController.create=false
 
 # -----------------------------------------------------------------------------
-# Readiness checks
+# Readiness
 # -----------------------------------------------------------------------------
-echo "⏳ Waiting for External Secrets controller to become ready..."
 kubectl -n "$NAMESPACE" wait \
   --for=condition=Available \
   deployment/external-secrets \
   --timeout="$TIMEOUT"
 
 # -----------------------------------------------------------------------------
-# Post-install sanity checks
+# Sanity checks
 # -----------------------------------------------------------------------------
-echo "🔍 Verifying webhook resources are NOT present..."
+echo "🔍 Verifying no ESO webhooks exist..."
+kubectl get validatingwebhookconfiguration | grep external-secrets && exit 1 || true
+kubectl get mutatingwebhookconfiguration | grep external-secrets && exit 1 || true
 
-if kubectl get validatingwebhookconfiguration 2>/dev/null | grep -q external-secrets; then
-  echo "❌ ERROR: validating webhook unexpectedly present"
-  exit 1
-else
-  echo "✅ No validating webhooks found"
-fi
-
-if kubectl get mutatingwebhookconfiguration 2>/dev/null | grep -q external-secrets; then
-  echo "❌ ERROR: mutating webhook unexpectedly present"
-  exit 1
-else
-  echo "✅ No mutating webhooks found"
-fi
-
-# -----------------------------------------------------------------------------
-# Final verification
-# -----------------------------------------------------------------------------
-echo "🔍 Verifying External Secrets CRDs..."
+echo "🔍 Verifying CRDs..."
 kubectl get crd | grep external-secrets
 
-echo "✅ External Secrets installation completed successfully"
-echo "   - Version:   $VERSION"
-echo "   - Namespace: $NAMESPACE"
-echo "   - Webhooks:  disabled"
+echo "✅ External Secrets installed successfully"
+echo "   Version:   $VERSION"
+echo "   Namespace: $NAMESPACE"
+echo "   Webhooks:  disabled"

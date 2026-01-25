@@ -172,10 +172,10 @@ func runScript(path string, args ...string) error {
 // 	return runScript("scripts/install-crossplane.sh")
 // }
 
-// func InstallExternalSecrets() error {
-// 	fmt.Println("🔐 Running ExternalSecrets Setup Script...")
-// 	return runScript("scripts/install-externalsecrets.sh")
-// }
+func InstallExternalSecrets() error {
+	fmt.Println("🔐 Running ExternalSecrets Setup Script...")
+	return runScript("scripts/install-externalsecrets.sh")
+}
 
 func RunShipwrightCertSetup() error {
 	fmt.Println("🔐 Running Shipwright Certificate Setup Script...")

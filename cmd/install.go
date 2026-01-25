@@ -49,6 +49,10 @@ func InstallAll() error {
 		return err
 	}
 
+	if err := core.RunShipwrightCertSetup(); err != nil {
+		return fmt.Errorf("Shipwright cert setup failed: %w", err)
+	}
+
 	// if err := core.InstallCrossplane(); err != nil {
 	// 	return fmt.Errorf("crossplane setup failed: %w", err)
 	// }
@@ -77,12 +81,12 @@ func InstallAll() error {
 		return err
 	}
 
-	fmt.Println("📦 Installing Crossplane Github Upjet Provider...")
-	if err := core.DependenciesInstall([]string{
-		"dependencies/crossplane/provider.yaml",
-	}); err != nil {
-		return err
-	}
+	// fmt.Println("📦 Installing Crossplane Github Upjet Provider...")
+	// if err := core.DependenciesInstall([]string{
+	// 	"dependencies/crossplane/provider.yaml",
+	// }); err != nil {
+	// 	return err
+	// }
 
 	fmt.Println("🎉 BlanketOps environment installed successfully!")
 	return nil
