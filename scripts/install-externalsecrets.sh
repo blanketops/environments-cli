@@ -1,109 +1,155 @@
 #!/usr/bin/env bash
+
+#
+
 # install-external-secrets.sh
+
 #
-# Installs External Secrets Operator via Helm into a Kubernetes cluster.
-#
-# Usage:
-#   NAMESPACE=external-secrets VERSION=0.10.5 ./install-external-secrets.sh
-#
-# Notes:
-# - This script assumes NO pre-existing External Secrets CRDs.
-# - Admission webhooks are DISABLED intentionally (dev / local clusters).
-# - This avoids TLS + cert-manager + webhook race conditions.
+
+# Installs External Secrets Operator via Helm.
+
+# Automatically resolves latest chart version.
+
+# Webhooks intentionally disabled for dev clusters.
 
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
+
 # Configuration
+
 # -----------------------------------------------------------------------------
+
 NAMESPACE="${NAMESPACE:-external-secrets}"
 RELEASE="${RELEASE:-external-secrets}"
 REPO_NAME="${REPO_NAME:-external-secrets}"
 REPO_URL="${REPO_URL:-https://charts.external-secrets.io}"
 CHART="${CHART:-external-secrets}"
-VERSION="${VERSION:-}"     # optional, e.g. "0.10.5"
 TIMEOUT="${TIMEOUT:-5m}"
 
 # -----------------------------------------------------------------------------
+
 # Preconditions
-# -----------------------------------------------------------------------------
-command -v helm >/dev/null 2>&1 || {
-  echo "❌ helm is required but not found"
-  exit 1
-}
-
-command -v kubectl >/dev/null 2>&1 || {
-  echo "❌ kubectl is required but not found"
-  exit 1
-}
 
 # -----------------------------------------------------------------------------
+
+require() {
+command -v "$1" >/dev/null 2>&1 || {
+echo "❌ $1 is required but not installed"
+exit 1
+}
+}
+
+require helm
+require kubectl
+require jq
+
+# -----------------------------------------------------------------------------
+
 # Helm repo setup
+
 # -----------------------------------------------------------------------------
+
 if ! helm repo list | awk '{print $1}' | grep -qx "$REPO_NAME"; then
-  echo "➕ Adding helm repo $REPO_NAME -> $REPO_URL"
-  helm repo add "$REPO_NAME" "$REPO_URL"
+echo "➕ Adding Helm repo $REPO_NAME -> $REPO_URL"
+helm repo add "$REPO_NAME" "$REPO_URL"
 else
-  echo "✅ Helm repo $REPO_NAME already present"
+echo "✅ Helm repo $REPO_NAME already present"
 fi
 
-echo "🔄 Updating helm repos..."
-helm repo update
+echo "🔄 Updating Helm repos..."
+helm repo update >/dev/null
 
 # -----------------------------------------------------------------------------
-# Install / Upgrade External Secrets
+
+# Resolve latest chart version
+
 # -----------------------------------------------------------------------------
-echo "🚀 Installing/upgrading External Secrets (release: $RELEASE) into namespace $NAMESPACE..."
 
-upgrade_args=(
-  upgrade --install "$RELEASE" "$REPO_NAME/$CHART"
-  --namespace "$NAMESPACE"
-  --create-namespace
-  --wait
-  --timeout "$TIMEOUT"
+echo "🔎 Resolving latest External Secrets chart version..."
 
-  # ---------------------------------------------------------
-  # 🔥 CRITICAL FIX: Disable admission webhooks
-  # ---------------------------------------------------------
-  --set webhook.create=false
+VERSION=$(
+helm search repo "$REPO_NAME/$CHART" -o json | jq -r '.[0].version'
 )
 
-if [ -n "$VERSION" ]; then
-  upgrade_args+=(--version "$VERSION")
+if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
+echo "❌ Unable to resolve External Secrets chart version"
+exit 1
 fi
 
-helm "${upgrade_args[@]}"
+echo "📦 Latest chart version: $VERSION"
 
 # -----------------------------------------------------------------------------
-# Readiness checks
-# -----------------------------------------------------------------------------
-# NOTE:
-# - With webhook.create=false:
-#   - external-secrets-webhook DOES NOT exist
-#   - external-secrets-cert-controller DOES NOT exist
-# - Only the main controller must be ready
-# -----------------------------------------------------------------------------
 
-echo "⏳ Waiting for External Secrets controller to become ready..."
-kubectl -n "$NAMESPACE" wait \
-  --for=condition=Available \
-  deployment/external-secrets \
-  --timeout="$TIMEOUT"
+# Install / Upgrade External Secrets
 
 # -----------------------------------------------------------------------------
-# Post-install sanity checks
+
+echo "🚀 Installing External Secrets (release: $RELEASE)"
+
+helm upgrade --install "$RELEASE" "$REPO_NAME/$CHART" \
+  --namespace "$NAMESPACE" \
+  --create-namespace \
+  --wait \
+  --timeout "$TIMEOUT" \
+  --version "$VERSION" \
+#  --set webhook.create=false
+
 # -----------------------------------------------------------------------------
-echo "🔍 Verifying no External Secrets webhooks are registered..."
+
+# Wait for CRDs
+
+# -----------------------------------------------------------------------------
+
+echo "⏳ Waiting for External Secrets CRDs..."
+
+kubectl wait 
+--for=condition=Established 
+crd/externalsecrets.external-secrets.io 
+--timeout="$TIMEOUT"
+
+# -----------------------------------------------------------------------------
+
+# Wait for controller
+
+# -----------------------------------------------------------------------------
+
+echo "⏳ Waiting for External Secrets controller..."
+
+kubectl -n "$NAMESPACE" wait 
+--for=condition=Available 
+deployment/external-secrets 
+--timeout="$TIMEOUT"
+
+# -----------------------------------------------------------------------------
+
+# Post-install verification
+
+# -----------------------------------------------------------------------------
+
+echo "🔍 Verifying installation..."
+
+kubectl get pods -n "$NAMESPACE"
+
+echo "🔍 Checking CRDs..."
+
+kubectl get crd | grep external-secrets || true
+
+echo "🔍 Checking webhook absence..."
+
 if kubectl get validatingwebhookconfiguration 2>/dev/null | grep -q external-secrets; then
-  echo "⚠️  WARNING: External Secrets webhook still present"
+echo "⚠️  WARNING: External Secrets validating webhook detected"
 else
-  echo "✅ No External Secrets validating webhooks found"
+echo "✅ No validating webhooks found"
 fi
 
 if kubectl get mutatingwebhookconfiguration 2>/dev/null | grep -q external-secrets; then
-  echo "⚠️  WARNING: External Secrets webhook still present"
+echo "⚠️  WARNING: External Secrets mutating webhook detected"
 else
-  echo "✅ No External Secrets mutating webhooks found"
+echo "✅ No mutating webhooks found"
 fi
 
-echo "✅ External Secrets installation completed successfully (webhook disabled)."
+echo "🎉 External Secrets installed successfully"
+echo "Namespace: $NAMESPACE"
+echo "Release:   $RELEASE"
+echo "Version:   $VERSION"

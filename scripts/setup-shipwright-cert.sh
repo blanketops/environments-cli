@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #!/bin/bash
 
 # Copyright The Shipwright Contributors

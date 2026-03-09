@@ -158,7 +158,8 @@ func InstallFluxCRDs() error {
 }
 
 // ---------------------------------------------------------------------------
-// Script helpers (filesystem)
+// Script helpers (filesystem)c
+
 // ---------------------------------------------------------------------------
 func runScript(path string, args ...string) error {
 	cmd := exec.Command("bash", append([]string{path}, args...)...)
