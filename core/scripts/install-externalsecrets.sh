@@ -1,23 +1,9 @@
 #!/usr/bin/env bash
 
-#
-
-# install-external-secrets.sh
-
-#
-
-# Installs External Secrets Operator via Helm.
-
-# Automatically resolves latest chart version.
-
-# Webhooks intentionally disabled for dev clusters.
-
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-
 # Configuration
-
 # -----------------------------------------------------------------------------
 
 NAMESPACE="${NAMESPACE:-external-secrets}"
@@ -28,9 +14,7 @@ CHART="${CHART:-external-secrets}"
 TIMEOUT="${TIMEOUT:-5m}"
 
 # -----------------------------------------------------------------------------
-
 # Preconditions
-
 # -----------------------------------------------------------------------------
 
 require() {
@@ -45,9 +29,7 @@ require kubectl
 require jq
 
 # -----------------------------------------------------------------------------
-
 # Helm repo setup
-
 # -----------------------------------------------------------------------------
 
 if ! helm repo list | awk '{print $1}' | grep -qx "$REPO_NAME"; then
@@ -61,16 +43,12 @@ echo "🔄 Updating Helm repos..."
 helm repo update >/dev/null
 
 # -----------------------------------------------------------------------------
-
 # Resolve latest chart version
-
 # -----------------------------------------------------------------------------
 
 echo "🔎 Resolving latest External Secrets chart version..."
 
-VERSION=$(
-helm search repo "$REPO_NAME/$CHART" -o json | jq -r '.[0].version'
-)
+VERSION=$(helm search repo "$REPO_NAME/$CHART" -o json | jq -r '.[0].version')
 
 if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
 echo "❌ Unable to resolve External Secrets chart version"
@@ -80,9 +58,7 @@ fi
 echo "📦 Latest chart version: $VERSION"
 
 # -----------------------------------------------------------------------------
-
 # Install / Upgrade External Secrets
-
 # -----------------------------------------------------------------------------
 
 echo "🚀 Installing External Secrets (release: $RELEASE)"
@@ -92,39 +68,29 @@ helm upgrade --install "$RELEASE" "$REPO_NAME/$CHART" \
   --create-namespace \
   --wait \
   --timeout "$TIMEOUT" \
-  --version "$VERSION" \
-#  --set webhook.create=false
+  --version "$VERSION"
 
 # -----------------------------------------------------------------------------
-
 # Wait for CRDs
-
 # -----------------------------------------------------------------------------
 
 echo "⏳ Waiting for External Secrets CRDs..."
 
-kubectl wait 
---for=condition=Established 
-crd/externalsecrets.external-secrets.io 
---timeout="$TIMEOUT"
+kubectl wait --for=condition=Established crd/externalsecrets.external-secrets.io --timeout="$TIMEOUT"
+kubectl wait --for=condition=Established crd/clusterexternalsecrets.external-secrets.io --timeout="$TIMEOUT"
+kubectl wait --for=condition=Established crd/clustersecretstores.external-secrets.io --timeout="$TIMEOUT"
+kubectl wait --for=condition=Established crd/secretstores.external-secrets.io --timeout="$TIMEOUT"
 
 # -----------------------------------------------------------------------------
-
 # Wait for controller
-
 # -----------------------------------------------------------------------------
 
 echo "⏳ Waiting for External Secrets controller..."
 
-kubectl -n "$NAMESPACE" wait 
---for=condition=Available 
-deployment/external-secrets 
---timeout="$TIMEOUT"
+kubectl -n "$NAMESPACE" rollout status deployment/external-secrets --timeout="$TIMEOUT"
 
 # -----------------------------------------------------------------------------
-
 # Post-install verification
-
 # -----------------------------------------------------------------------------
 
 echo "🔍 Verifying installation..."
@@ -134,20 +100,6 @@ kubectl get pods -n "$NAMESPACE"
 echo "🔍 Checking CRDs..."
 
 kubectl get crd | grep external-secrets || true
-
-echo "🔍 Checking webhook absence..."
-
-if kubectl get validatingwebhookconfiguration 2>/dev/null | grep -q external-secrets; then
-echo "⚠️  WARNING: External Secrets validating webhook detected"
-else
-echo "✅ No validating webhooks found"
-fi
-
-if kubectl get mutatingwebhookconfiguration 2>/dev/null | grep -q external-secrets; then
-echo "⚠️  WARNING: External Secrets mutating webhook detected"
-else
-echo "✅ No mutating webhooks found"
-fi
 
 echo "🎉 External Secrets installed successfully"
 echo "Namespace: $NAMESPACE"
