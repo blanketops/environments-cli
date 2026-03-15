@@ -2,13 +2,13 @@ name: Build BlanketOps Environments CLI
 
 on:
   push:
-    branches: [master]
+    branches: [develop]
   pull_request:
-    branches: [master]
+    branches: [develop]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repo
