@@ -20,7 +20,7 @@ jobs:
 
       - name: Build CLI (Dynamic)
         # Using 'go run' avoids needing to install mage on the runner itself
-        run: go run magefile.go build
+        run: go run magefile.go build main.go
 
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
