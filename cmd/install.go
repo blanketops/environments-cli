@@ -84,6 +84,11 @@ func InstallAll() error {
 		return err
 	}
 
+	if err := core.RunShipwrightCertSetup(); err != nil {
+		return fmt.Errorf("shipwright certs setup failed: %w", err)
+	}
+
+
 	fmt.Println("🎉 BlanketOps environment installed successfully!")
 	return nil
 }
