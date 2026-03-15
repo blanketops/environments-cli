@@ -8,8 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: self-hosted
-
+    runs-on: self-hosted # Your local systemd-managed runner
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -19,21 +18,9 @@ jobs:
         with:
           go-version: "1.22"
 
-      - name: Cache Go Modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install dependencies
-        run: go mod download
-
-      - name: Build BlanketOps Environments CLI (Dynamic)
-        run: make build
+      - name: Build CLI (Dynamic)
+        # Using 'go run' avoids needing to install mage on the runner itself
+        run: go run mage.go build
 
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
@@ -45,7 +32,6 @@ jobs:
   static-build:
     runs-on: ubuntu-latest
     needs: build
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -55,23 +41,14 @@ jobs:
         with:
           go-version: "1.22"
 
-      - name: Cache Go Modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+      - name: Build Static Binaries (AMD64 & ARM64)
+        run: |
+          go run mage.go static
+          go run mage.go staticarm64
 
-      - name: Static Build (gokrazy)
-        # This uses the *fixed* Makefile rule with env CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-        run: cd cli && make static
-
-      - name: Upload Static Binary Artifact
+      - name: Upload Static Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: blanketops-environments-static
-          path: bin/blanketops-environments-static
+          path: bin/blanketops-environments-static*
           retention-days: 14
