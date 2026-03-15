@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ntlaletsi70/blanketops-environments-mvp/cli/cmd"
+	"github.com/ntlaletsi70/blanketops-environments-cli/cmd"
 )
 
 func banner() {
