@@ -1,22 +1,33 @@
 name: Release
-
 on:
     push:
         tags:
             - "v*"
-
 permissions:
     contents: write
-
 jobs:
     release:
         runs-on: self-hosted
-
         steps:
             - name: Checkout tag
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: "1.25"
+                  cache: false
+
+            - name: Install Mage
+              run: go install github.com/magefile/mage@latest
+
+            - name: Build binaries
+              run: |
+                  mage build
+                  mage static
+                  mage staticarm64
 
             - name: Install git-cliff
               run: |
@@ -24,13 +35,11 @@ jobs:
                   tar -xzf cliff.tar.gz
                   sudo mv git-cliff-2.4.0/git-cliff /usr/local/bin/git-cliff
 
-            # 🔥 Switch to main branch before committing
             - name: Checkout main
               run: |
                   git checkout main
                   git pull origin main
 
-            # 🔥 Generate full changelog
             - name: Generate CHANGELOG.md
               run: git-cliff --config .cliff.toml --output CHANGELOG.md
 
@@ -49,5 +58,9 @@ jobs:
               uses: softprops/action-gh-release@v2
               with:
                   body_path: RELEASE_NOTES.md
+                  files: |
+                      bin/blanketops-environments
+                      bin/blanketops-environments-static
+                      bin/blanketops-environments-static-arm64
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
