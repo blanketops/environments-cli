@@ -1,7 +1,9 @@
 name: Build BlanketOps Environments CLI
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
+      - main
   pull_request:
     branches: [develop]
 
