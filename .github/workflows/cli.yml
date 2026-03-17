@@ -31,7 +31,7 @@ jobs:
           retention-days: 14
 
   static-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build
     steps:
       - name: Checkout repo
