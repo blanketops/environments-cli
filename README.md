@@ -110,7 +110,7 @@ No manual certificate management is required.
 A fully static binary can be produced for minimal environments:
 
 ```bash
-make static
+mage static
 ```
 
 The resulting binary can run on:
@@ -126,19 +126,19 @@ The resulting binary can run on:
 Build the CLI:
 
 ```bash
-make build
+mage build
 ```
 
 Install to `$HOME/.local/bin` (fallback `$HOME/bin`):
 
 ```bash
-make install
+mage install
 ```
 
 Build a static binary:
 
 ```bash
-make static
+mage static
 ```
 
 ---
@@ -207,7 +207,6 @@ blanketops-environments-cli
 │   └── os.go
 │
 ├── magefile.go
-└── Makefile
 ```
 
 ---
@@ -239,7 +238,7 @@ kubectl get pods -A
 Build the static binary:
 
 ```bash
-make static
+mage static
 ```
 
 Add to a gokrazy package:

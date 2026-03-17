@@ -1,15 +1,15 @@
 name: Build BlanketOps Environments CLI
-
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
+      - main
   pull_request:
     branches: [develop]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -17,35 +17,25 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: "1.25"
+          cache: false
 
-      - name: Cache Go Modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+      - name: Install Mage
+        run: go install github.com/magefile/mage@latest
 
-      - name: Install dependencies
-        run: go mod download
-
-      - name: Build BlanketOps Environments CLI (Dynamic)
-        run: make build
+      - name: Build CLI (Dynamic)
+        run: mage build
 
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: blanketops-environments
-          path: bin/blanketops-environments
+          name: blanketops-environments-cli
+          path: bin/blanketops-environments-cli
           retention-days: 14
 
   static-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -53,25 +43,20 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: "1.25"
+          cache: false
 
-      - name: Cache Go Modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+      - name: Install Mage
+        run: go install github.com/magefile/mage@latest
 
-      - name: Static Build (gokrazy)
-        # This uses the *fixed* Makefile rule with env CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-        run: cd cli && make static
+      - name: Build Static Binaries (AMD64 & ARM64)
+        run: |
+          mage static
+          mage staticarm64
 
-      - name: Upload Static Binary Artifact
+      - name: Upload Static Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: blanketops-environments-static
-          path: bin/blanketops-environments-static
+          name: blanketops-environments-cli-static
+          path: bin/blanketops-environments-cli-static*
           retention-days: 14
