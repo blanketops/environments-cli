@@ -9,7 +9,6 @@ import (
 // ---------------------------------------------------------------------------
 // Install entry point
 // ---------------------------------------------------------------------------
-
 func InstallAll() error {
 	fmt.Println("🚀 BlanketOps Environments Installer")
 	fmt.Println("─────────────────────────")
@@ -50,16 +49,25 @@ func InstallAll() error {
 	}
 
 	if err := core.RunShipwrightCertSetup(); err != nil {
-		return fmt.Errorf("Shipwright cert setup failed: %w", err)
+		return fmt.Errorf("shipwright cert setup failed: %w", err)
 	}
 
-	// if err := core.InstallCrossplane(); err != nil {
-	// 	return fmt.Errorf("crossplane setup failed: %w", err)
-	// }
+	fmt.Println("📦 Installing Crossplane...")
+	if err := core.InstallCrossplane(); err != nil {
+		return fmt.Errorf("crossplane setup failed: %w", err)
+	}
 
-	// if err := core.InstallExternalSecrets(); err != nil {
-	// 	return fmt.Errorf("externalsecrets setup failed: %w", err)
-	// }
+	fmt.Println("📦 Installing Crossplane GitHub Upjet Provider...")
+	if err := core.DependenciesInstall([]string{
+		"dependencies/crossplane/provider.yaml",
+	}); err != nil {
+		return err
+	}
+
+	fmt.Println("📦 Installing External Secrets...")
+	if err := core.InstallExternalSecrets(); err != nil {
+		return fmt.Errorf("externalsecrets setup failed: %w", err)
+	}
 
 	fmt.Println("📦 Installing Build Strategies...")
 	if err := core.DependenciesInstall([]string{
@@ -80,18 +88,6 @@ func InstallAll() error {
 	}); err != nil {
 		return err
 	}
-
-	// fmt.Println("📦 Installing Crossplane Github Upjet Provider...")
-	// if err := core.DependenciesInstall([]string{
-	// 	"dependencies/crossplane/provider.yaml",
-	// }); err != nil {
-	// 	return err
-	// }
-
-	if err := core.RunShipwrightCertSetup(); err != nil {
-		return fmt.Errorf("shipwright certs setup failed: %w", err)
-	}
-
 
 	fmt.Println("🎉 BlanketOps environment installed successfully!")
 	return nil
