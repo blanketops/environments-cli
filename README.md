@@ -1,223 +1,346 @@
-# 🚀 BlanketOps Environments — CLI (v0.0.1)
+# 🚀 BlanketOps Environments — Platform Bootstrap CLI
 
-BlanketOps `Environments` CLI is a self-contained, zero-dependency Kubernetes bootstrapper.
-One binary installs your entire software delivery environment:
+BlanketOps Environments CLI is a self-contained Kubernetes platform bootstrapper.
 
-It provides a fast, repeatable way to bring up a complete software delivery environment for BlanketOps — from a clean machine to a working Kubernetes platform — using a single binary.
+A single binary installs a complete cloud-native delivery stack directly into a cluster using the Kubernetes API — **no kubectl required**.
 
-The CLI is intentionally explicit, filesystem-driven, and easy to reason about.
+The binary embeds all manifests and bootstrap scripts, making it suitable for minimal systems, appliances, and automated cluster provisioning.
 
-## 🎯 What this tool achieves
+---
 
-BlanketOps Environments is designed to:
+## ✨ What It Installs
 
-- ### Lower the cost of onboarding
-  - New contributors get a working environment quickly
-  - No tribal knowledge required
+The installer deploys a full platform stack:
 
-- ### Provide a consistent baseline
-  - Same dependencies
-  - Same order
-  - Same behavior across machines
+| Component                     | Role                               |
+| ----------------------------- | ---------------------------------- |
+| **Carvel Kapp Controller**    | Packaging and lifecycle management |
+| **Argo Events**               | Event-driven pipelines             |
+| **Tekton Pipelines**          | CI/CD execution engine             |
+| **Tekton Dashboard**          | Pipeline UI                        |
+| **Shipwright Build**          | Kubernetes-native image builds     |
+| **Crossplane**                | Infrastructure orchestration       |
+| **External Secrets Operator** | Secure secret integration          |
 
-- ### Make infrastructure visible
-  - Manifests live on disk
-  - Scripts are readable
-  - Failures are observable
+Together these components form a self-hosted software delivery platform.
 
-- ### Support fast iteration
-- Easy to reset
-- Easy to debug
-- Easy to extend
+---
 
-This tool focuses on environment bootstrapping, not long-term cluster management.
+## ⚙️ Design Goals
 
-## 🧱 Platform components installed
+The CLI is built for environments where traditional tooling may not exist.
 
-When you run:
+Ideal for:
 
-```sh
-blanketops-environments install
+- Air-gapped clusters
+- Bare metal Kubernetes nodes
+- Immutable appliances
+- Edge deployments
+- Gokrazy systems
+- Ephemeral CI clusters
+
+---
+
+## 🔧 Pure Go Kubernetes Apply Engine
+
+All resources are applied using the Kubernetes API directly. No external tools are required.
+
+The installer uses:
+
+- `client-go` dynamic client
+- Discovery-backed REST mapper
+- Unstructured object decoding
+
+The apply engine performs installation in deterministic order:
+
+```
+CRD detection
+    ↓
+CRD installation
+    ↓
+CRD registration wait
+    ↓
+remaining resource application
 ```
 
-The following components are installed into the cluster.
+This guarantees deterministic installation order.
 
-### Core delivery platform
+---
 
-- Carvel (kapp)
-- Argo Events
-- Tekton Pipelines
-- Tekton Dashboard
-- Shipwright Build
+## 📦 Fully Embedded Assets
 
-### Control plane & GitOps
+All manifests and scripts are compiled into the binary using `go:embed`. Nothing is read from disk.
 
-- Flux CD (CRDs + UI)
-- Crossplane
-- External Secrets
+Embedded resources include:
 
-### Build strategies
-
-- Buildpacks v3
-- Kaniko
-- Buildah (Shipwright-managed)
-
-All manifests are sourced from:
-
-```tree
+```
 dependencies/
+├── carvel/
+├── argoevents/
+├── tekton/
+└── shipwright/
+
+scripts/
+├── install-crossplane.sh
+├── install-externalsecrets.sh
+└── setup-shipwright-cert.sh
 ```
 
-and applied deterministically.
+This ensures the binary works anywhere without filesystem dependencies.
 
-## 🖥 CLI Usage
+---
 
-### Primary commands (stable)
+## 🔐 Shipwright Webhook Certificate Automation
 
-```sh
+The installer automatically configures Shipwright's webhook certificates. It performs:
+
+1. CSR generation
+2. Certificate approval
+3. TLS secret creation
+4. CA bundle injection
+5. Webhook restart
+6. Deployment readiness checks
+
+No manual certificate management is required.
+
+---
+
+## 🧊 Static Builds (Gokrazy Compatible)
+
+A fully static binary can be produced for minimal environments:
+
+```bash
+mage static
+```
+
+The resulting binary can run on:
+
+- gokrazy systems
+- Minimal containers
+- Stripped-down Linux environments
+
+---
+
+## 🛠️ Build & Install
+
+Build the CLI:
+
+```bash
+mage build
+```
+
+Install to `$HOME/.local/bin` (fallback `$HOME/bin`):
+
+```bash
+mage install
+```
+
+Build a static binary:
+
+```bash
+mage static
+```
+
+---
+
+## 🚀 Usage
+
+Install the platform stack:
+
+```bash
 blanketops-environments install
+```
+
+Uninstall everything:
+
+```bash
 blanketops-environments uninstall
-blanketops-environments dist
 ```
 
-These commands are considered part of the stable CLI contract.
+Install only dependencies:
 
-### Explicit dependency aliases
-
-```sh
+```bash
 blanketops-environments dependencies install
-blanketops-environments dependencies uninstall
 ```
 
-These are aliases of install and uninstall, provided to make intent explicit.
+Cluster management commands:
 
-### Cluster lifecycle (Kind, MVP scope)
-
-```sh
-blanketops-environments cluster up
-blanketops-environments cluster down
-blanketops-environments cluster status
+```bash
+blanketops-environments cluster up [name]
+blanketops-environments cluster down [name]
+blanketops-environments cluster status [name]
 ```
 
-Cluster behavior in v0.0.1:
+---
 
-- Uses Kind as the cluster backend
-- Creates a cluster if one does not exist
-- Waits for the Kubernetes API and node readiness
-- Fails fast if prerequisites are missing
+## 📂 Project Structure
 
-## 🛠 Installation
-
-### Build the CLI
-
-```sh
-make build
+```
+blanketops-environments-cli
+│
+├── main.go
+├── cmd/
+│   ├── install.go
+│   ├── uninstall.go
+│   └── cluster.go
+│
+├── core/
+│   ├── apply.go
+│   ├── kube.go
+│   ├── dependencies.go
+│   └── wait.go
+│
+├── dependencies/
+│   ├── carvel/
+│   ├── argoevents/
+│   ├── tekton/
+│   └── shipwright/
+│
+├── scripts/
+│   ├── install-crossplane.sh
+│   ├── install-externalsecrets.sh
+│   └── setup-shipwright-cert.sh
+│
+├── util/
+│   ├── exec.go
+│   ├── fs.go
+│   └── os.go
+│
+├── magefile.go
 ```
 
-### Install locally
+---
 
-```sh
-make install
+## 🧪 Local Testing
+
+Create a test cluster:
+
+```bash
+kind create cluster
 ```
 
-The binary is installed to:
+Install the stack:
 
-- `$HOME/.local/bin` (preferred)
-- `$HOME/bin` (fallback)
-
-Ensure the location is on your PATH.
-
-## 🚀 Recommended workflow
-
-```sh
-# Create a local cluster
-blanketops-environments cluster up
-
-# Install platform dependencies
+```bash
 blanketops-environments install
+```
 
-# Verify
+Verify components:
+
+```bash
 kubectl get pods -A
 ```
 
-To reset everything:
+---
 
-```sh
-blanketops-environments uninstall
-blanketops-environments cluster down
+## ⚙️ Gokrazy Workflow
+
+Build the static binary:
+
+```bash
+mage static
 ```
 
-## 📂 Project structure (current)
+Add to a gokrazy package:
 
-```tree
-cli/
-├── main.go                # CLI entrypoint
-├── cmd/                   # Command wiring
-│ ├── install.go
-│ ├── uninstall.go
-│ └── dist.go
-│
-├── core/                  # Authoritative system logic
-│ ├── cluster.go           # Cluster lifecycle (Kind)
-│ ├── dependencies.go      # Dependency installation
-│ ├── kube.go              # client-go setup
-│ ├── apply.go             # Kubernetes apply engine
-│ ├── uninstall.go         # Safe teardown logic
-│ └── wait.go              # Readiness checks
-│
-├── dependencies/          # Filesystem manifests
-│ ├── tekton/
-│ ├── shipwright/
-│ ├── flux/
-│ ├── crossplane/
-│ └── cluster_strategies/
-│
-├── scripts/               # Shell helpers
-├── util/                  # Low-level helpers
-├── Makefile
-└── README.md
+```bash
+gok add ./bin/blanketops-environments-static
 ```
 
-## 🧪 Testing status
+Build the image:
 
-- Manual testing via Kind
-- Installer behavior verified end-to-end
-- Automated tests planned post–v0.0.1
+```bash
+gok build
+```
 
-The focus in this release is correct sequencing and observability.
+---
 
-## 🧭 Design principles
+## 🧠 Platform Architecture
 
-- CLI is the entry point
-- `core/` owns behavior
-- Manifests are explicit
-- State changes are reversible
-- Errors should be visible
+How the CLI interacts with Kubernetes:
 
-This project favors clarity over cleverness.
+```mermaid
+flowchart TD
+    CLI[BlanketOps Environments CLI]
+    CLI --> Engine[Go Apply Engine]
+    Engine --> Client[client-go Dynamic Client]
+    Engine --> Mapper[Discovery REST Mapper]
+    Mapper --> API[Kubernetes API Server]
+    Engine --> CRDs[CRD Install + Wait]
+    Engine --> Resources[Resource Apply]
+    Resources --> Platform[Platform Stack]
+    Platform --> Carvel
+    Platform --> ArgoEvents
+    Platform --> Tekton
+    Platform --> Shipwright
+    Platform --> Crossplane
+    Platform --> ExternalSecrets
+```
+
+---
+
+## 🧱 Platform Stack
+
+What the installer builds inside the cluster:
+
+```mermaid
+flowchart TD
+    K8s[Kubernetes Cluster]
+    K8s --> Carvel[Kapp Controller]
+    K8s --> ArgoEvents[Argo Events]
+    K8s --> Tekton[Tekton Pipelines]
+    Tekton --> Dashboard[Tekton Dashboard]
+    K8s --> Shipwright[Shipwright Build]
+    Shipwright --> Strategies[Build Strategies]
+    K8s --> Crossplane[Crossplane Control Plane]
+    K8s --> ExternalSecrets[External Secrets Operator]
+```
+
+---
+
+## ⚙️ Installation Flow
+
+What the CLI does, step by step:
+
+```mermaid
+flowchart TD
+    Start[blanketops-environments install]
+    Start --> Carvel
+    Carvel --> ArgoEvents
+    ArgoEvents --> Tekton
+    Tekton --> Dashboard
+    Dashboard --> Shipwright
+    Shipwright --> Crossplane
+    Crossplane --> ExternalSecrets
+    ExternalSecrets --> Done[Platform Ready]
+```
+
+---
+
+## 🌐 Bootstrap Model
+
+The core architectural idea: a single binary, fully self-contained.
+
+```mermaid
+flowchart LR
+    Binary[Single CLI Binary]
+    Binary --> Embedded[Embedded Manifests]
+    Embedded --> Kubernetes[Kubernetes Cluster]
+    Kubernetes --> Platform[Platform Services]
+    Platform --> CI[CI Pipelines]
+    Platform --> Builds[Image Builds]
+    Platform --> Infra[Infrastructure APIs]
+    Platform --> Secrets[Secret Management]
+```
+
+```bash
+blanketops-environments install
+```
+
+---
 
 ## 🤝 Contributing
 
-The project is early-stage but stabilizing.
+Pull requests and improvements are welcome.
 
-- Issues and feedback are welcome
-- Pull requests are welcome
-- Architectural discussions are encouraged
-
-If something is unclear, that’s a signal to improve the tool.
-
-## 🧠 Closing note
-
-BlanketOps Environments exists to make Kubernetes environments `repeatable`, `understandable`, and `disposable`.
-
-If you can:
-
-- inspect what was applied
-- understand why something failed
-- tear everything down and start again
-
-then the tool is doing its job.
-
-```
-
-```
+The project is evolving toward a fully self-hosted platform bootstrap system for Kubernetes environments.

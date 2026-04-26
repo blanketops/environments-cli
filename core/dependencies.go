@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -11,9 +12,8 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// DependenciesInstall
+// DependenciesInstall (uses embedded assets)
 // ---------------------------------------------------------------------------
-// DependenciesInstall reads YAML manifests from disk and applies them to the cluster.
 func DependenciesInstall(paths []string) error {
 	dc, cfg, err := NewDynamicClient()
 	if err != nil {
@@ -26,9 +26,10 @@ func DependenciesInstall(paths []string) error {
 	}
 
 	for _, path := range paths {
+
 		fmt.Printf("📄 Applying %s\n", path)
 
-		data, err := os.ReadFile(path)
+		data, err := Assets.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("read manifest %s: %w", path, err)
 		}
@@ -50,6 +51,7 @@ func DependenciesInstall(paths []string) error {
 // ApplyFromURL
 // ---------------------------------------------------------------------------
 func ApplyFromURL(url string) error {
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch url %s: %w", url, err)
@@ -81,9 +83,10 @@ func ApplyFromURL(url string) error {
 }
 
 // ---------------------------------------------------------------------------
-// ApplyLocalDir (filesystem only)
+// ApplyEmbeddedDir
 // ---------------------------------------------------------------------------
-func ApplyLocalDir(path string) error {
+func ApplyEmbeddedDir(path string) error {
+
 	dc, cfg, err := NewDynamicClient()
 	if err != nil {
 		return err
@@ -94,83 +97,88 @@ func ApplyLocalDir(path string) error {
 		return err
 	}
 
-	stat, err := os.Stat(path)
+	entries, err := Assets.ReadDir(path)
 	if err != nil {
-		return fmt.Errorf("path not found: %w", err)
+		return fmt.Errorf("embedded path not found: %w", err)
 	}
 
-	if stat.IsDir() {
-		entries, err := os.ReadDir(path)
+	for _, e := range entries {
+
+		if e.IsDir() {
+			continue
+		}
+
+		file := filepath.Join(path, e.Name())
+
+		data, err := Assets.ReadFile(file)
 		if err != nil {
 			return err
 		}
 
-		for _, e := range entries {
-			if e.IsDir() {
-				continue
-			}
-
-			file := filepath.Join(path, e.Name())
-			data, err := os.ReadFile(file)
-			if err != nil {
-				return err
-			}
-
-			objs, err := decodeYAMLStream(bytes.NewReader(data))
-			if err != nil {
-				return err
-			}
-
-			if err := robustApply(dc, mapper, objs); err != nil {
-				return err
-			}
+		objs, err := decodeYAMLStream(bytes.NewReader(data))
+		if err != nil {
+			return err
 		}
-		return nil
+
+		if err := robustApply(dc, mapper, objs); err != nil {
+			return err
+		}
 	}
 
-	// single file
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	objs, err := decodeYAMLStream(bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-
-	return robustApply(dc, mapper, objs)
+	return nil
 }
 
 // ---------------------------------------------------------------------------
-// Flux CRDs (URL-based)
+// Flux CRDs
 // ---------------------------------------------------------------------------
 func InstallFluxCRDs() error {
+
 	fmt.Println("📘 Installing Flux CRDs...")
 
 	url := "https://github.com/fluxcd/flux2/releases/latest/download/install.yaml"
+
 	if err := ApplyFromURL(url); err != nil {
 		return err
 	}
 
 	time.Sleep(2 * time.Second)
+
 	return nil
 }
 
 // ---------------------------------------------------------------------------
-// Script helpers (filesystem)
+// Script runner (embedded)
 // ---------------------------------------------------------------------------
 func runScript(path string, args ...string) error {
-	cmd := exec.Command("bash", append([]string{path}, args...)...)
+
+	data, err := Assets.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	tmp, err := os.CreateTemp("", "blanketops-script-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+
+	if _, err := io.Copy(tmp, bytes.NewReader(data)); err != nil {
+		return err
+	}
+
+	tmp.Close()
+
+	cmd := exec.Command("bash", append([]string{tmp.Name()}, args...)...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	return cmd.Run()
 }
 
-// func InstallCrossplane() error {
-// 	fmt.Println("🔐 Running Crossplane Setup Script...")
-// 	return runScript("scripts/install-crossplane.sh")
-// }
+func InstallCrossplane() error {
+	fmt.Println("🔐 Running Crossplane Setup Script...")
+	return runScript("scripts/install-crossplane.sh")
+}
 
 func InstallExternalSecrets() error {
 	fmt.Println("🔐 Running ExternalSecrets Setup Script...")

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>blanketops-environments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --bg: #0d1117;
+    --bg2: #13181f;
+    --bg3: #1a2030;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --muted2: #9ba5b0;
+    --green: #3fb950;
+    --green-dim: #1a7f37;
+    --green-bg: rgba(35, 134, 54, 0.12);
+    --green-border: rgba(35, 134, 54, 0.3);
+    --blue: #58a6ff;
+    --blue-bg: rgba(31, 111, 235, 0.1);
+    --blue-border: rgba(31, 111, 235, 0.25);
+    --amber: #d29922;
+    --amber-bg: rgba(187, 128, 9, 0.1);
+    --amber-border: rgba(187, 128, 9, 0.25);
+    --teal: #39d353;
+    --prompt: #3fb950;
+    --cmd-bg: #090d13;
+    --cmd-text: #79c0ff;
+    --cmd-comment: #3d444d;
+  }
+
+  html { font-size: 15px; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 3rem 2rem 5rem;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--green);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .hero-title span {
+    color: var(--green);
+  }
+
+  .hero-desc {
+    font-size: 14px;
+    color: var(--muted2);
+    max-width: 580px;
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
+  }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 0.5px solid;
+  }
+
+  .badge-green { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .badge-blue  { background: var(--blue-bg);  color: var(--blue);  border-color: var(--blue-border);  }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+
+  /* ── Sections ── */
+  .section {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .section-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+
+  .icon-green { background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-border); }
+  .icon-blue  { background: var(--blue-bg);  color: var(--blue);  border: 0.5px solid var(--blue-border);  }
+  .icon-amber { background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-border); }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .body-text {
+    font-size: 13px;
+    color: var(--muted2);
+    line-height: 1.7;
+    margin-bottom: 0.9rem;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg3);
+    color: var(--blue);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 0.5px solid var(--border2);
+  }
+
+  /* ── Stack grid ── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .stack-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    transition: border-color 0.15s;
+  }
+
+  .stack-item:hover { border-color: var(--border2); }
+  .stack-item.full  { grid-column: span 2; }
+
+  .stack-name {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .stack-role {
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+
+  /* ── Flow strip ── */
+  .flow-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0;
+    padding: 0.5rem 0;
+    scrollbar-width: none;
+  }
+  .flow-strip::-webkit-scrollbar { display: none; }
+
+  .flow-node {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--green);
+    background: var(--green-bg);
+    border: 0.5px solid var(--green-border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 0 6px;
+    flex-shrink: 0;
+    font-family: var(--mono);
+  }
+
+  /* ── Engine steps ── */
+  .engine-steps { display: flex; flex-direction: column; gap: 8px; }
+
+  .engine-step {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--green-bg);
+    border: 0.5px solid var(--green-border);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-body {
+    font-size: 13px;
+    color: var(--muted2);
+    line-height: 1.55;
+  }
+
+  .step-label {
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--text);
+    font-size: 12.5px;
+  }
+
+  /* ── Tag pills ── */
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 0.6rem;
+  }
+
+  .env-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted2);
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 9px;
+  }
+
+  .env-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+
+  /* ── Tree block ── */
+  .tree-block {
+    background: var(--cmd-bg);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 2;
+    overflow-x: auto;
+  }
+
+  .tree-dir  { color: var(--text); font-weight: 500; }
+  .tree-file { color: var(--muted2); }
+  .tree-ann  { color: var(--green-dim); }
+
+  /* ── Cert cards ── */
+  .cert-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 0.75rem;
+  }
+
+  .cert-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+
+  .cert-label {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--green);
+    margin-bottom: 3px;
+  }
+
+  .cert-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── Command blocks ── */
+  .cmd-block {
+    background: var(--cmd-bg);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    overflow-x: auto;
+  }
+
+  .cmd-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    line-height: 2;
+  }
+
+  .prompt { color: var(--prompt); user-select: none; font-weight: 500; flex-shrink: 0; }
+  .cmd    { color: var(--cmd-text); }
+  .cmt    { color: var(--cmd-comment); font-style: italic; margin-left: 8px; }
+
+  .cmd-block + .cmd-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 0.5px solid var(--border);
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .footer-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── Divider spacer ── */
+  .spacer {
+    height: 0.5px;
+    background: var(--border);
+    margin: 0 0 2.5rem;
+    display: none;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 520px) {
+    .stack-grid { grid-template-columns: 1fr; }
+    .stack-item.full { grid-column: span 1; }
+    .cert-grid { grid-template-columns: 1fr; }
+    .hero-title { font-size: 20px; }
+    .page { padding: 2rem 1.25rem 4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">platform · bootstrap · cli</div>
+    <div class="hero-title"><span>blanketops</span>-environments</div>
+    <div class="hero-desc">Self-contained Kubernetes platform bootstrapper — no kubectl required. A single binary installs a complete cloud-native delivery stack directly against the cluster API.</div>
+    <div class="badge-row">
+      <span class="badge badge-green">Go</span>
+      <span class="badge badge-blue">Kubernetes</span>
+      <span class="badge badge-blue">client-go</span>
+      <span class="badge badge-amber">Gokrazy-compatible</span>
+      <span class="badge badge-green">Static binary</span>
+    </div>
+  </div>
+
+  <!-- Platform stack -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-green">✦</div>
+      <div class="section-title">Platform stack</div>
+    </div>
+    <div class="body-text">The installer deploys these components in dependency order, waiting for CRDs to settle between phases.</div>
+    <div class="stack-grid">
+      <div class="stack-item">
+        <span class="stack-name">Kapp Controller</span>
+        <span class="stack-role">packaging &amp; lifecycle</span>
+      </div>
+      <div class="stack-item">
+        <span class="stack-name">Argo Events</span>
+        <span class="stack-role">event-driven pipelines</span>
+      </div>
+      <div class="stack-item">
+        <span class="stack-name">Tekton Pipelines</span>
+        <span class="stack-role">CI/CD execution</span>
+      </div>
+      <div class="stack-item">
+        <span class="stack-name">Tekton Dashboard</span>
+        <span class="stack-role">pipeline UI</span>
+      </div>
+      <div class="stack-item">
+        <span class="stack-name">Shipwright Build</span>
+        <span class="stack-role">native image builds</span>
+      </div>
+      <div class="stack-item">
+        <span class="stack-name">Crossplane</span>
+        <span class="stack-role">infra orchestration</span>
+      </div>
+      <div class="stack-item full">
+        <span class="stack-name">External Secrets Operator</span>
+        <span class="stack-role">secure secret integration</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Installation order -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-blue">→</div>
+      <div class="section-title">Installation order</div>
+    </div>
+    <div class="flow-strip">
+      <span class="flow-node">Carvel</span><span class="flow-arrow">→</span>
+      <span class="flow-node">Argo Events</span><span class="flow-arrow">→</span>
+      <span class="flow-node">Tekton</span><span class="flow-arrow">→</span>
+      <span class="flow-node">Dashboard</span><span class="flow-arrow">→</span>
+      <span class="flow-node">Shipwright</span><span class="flow-arrow">→</span>
+      <span class="flow-node">Crossplane</span><span class="flow-arrow">→</span>
+      <span class="flow-node">Ext. Secrets</span>
+    </div>
+  </div>
+
+  <!-- Pure Go apply engine -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-green">⚙</div>
+      <div class="section-title">Pure Go apply engine</div>
+    </div>
+    <div class="body-text">All resources applied directly via the Kubernetes API. No external tooling required.</div>
+    <div class="engine-steps">
+      <div class="engine-step">
+        <div class="step-num">1</div>
+        <div class="step-body"><span class="step-label">CRD detection</span> — discover which custom resource definitions are needed</div>
+      </div>
+      <div class="engine-step">
+        <div class="step-num">2</div>
+        <div class="step-body"><span class="step-label">CRD installation</span> — apply via <code>client-go</code> dynamic client</div>
+      </div>
+      <div class="engine-step">
+        <div class="step-num">3</div>
+        <div class="step-body"><span class="step-label">CRD registration wait</span> — poll until the discovery REST mapper sees new types</div>
+      </div>
+      <div class="engine-step">
+        <div class="step-num">4</div>
+        <div class="step-body"><span class="step-label">Resource application</span> — decode unstructured objects, apply remaining manifests</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Design goals -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-amber">◈</div>
+      <div class="section-title">Design goals</div>
+    </div>
+    <div class="body-text">Built for environments where traditional tooling may not exist.</div>
+    <div class="tag-row">
+      <span class="env-tag"><span class="env-dot"></span>Air-gapped clusters</span>
+      <span class="env-tag"><span class="env-dot"></span>Bare metal nodes</span>
+      <span class="env-tag"><span class="env-dot"></span>Immutable appliances</span>
+      <span class="env-tag"><span class="env-dot"></span>Edge deployments</span>
+      <span class="env-tag"><span class="env-dot"></span>Gokrazy systems</span>
+      <span class="env-tag"><span class="env-dot"></span>Ephemeral CI clusters</span>
+    </div>
+  </div>
+
+  <!-- Fully embedded assets -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-blue">▣</div>
+      <div class="section-title">Fully embedded assets</div>
+    </div>
+    <div class="body-text">All manifests and scripts are compiled into the binary via <code>go:embed</code>. Nothing is read from disk at runtime.</div>
+    <div class="tree-block">
+      <div><span class="tree-dir">dependencies/</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">carvel/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ Kapp Controller manifests</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">argoevents/</span>&nbsp;&nbsp; <span class="tree-ann">↳ Argo Events manifests</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">tekton/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ Tekton + Dashboard</span></div>
+      <div>&nbsp;&nbsp;└── <span class="tree-dir">shipwright/</span>&nbsp;&nbsp; <span class="tree-ann">↳ Shipwright Build</span></div>
+      <div style="margin-top:0.5rem"><span class="tree-dir">scripts/</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-file">install-crossplane.sh</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-file">install-externalsecrets.sh</span></div>
+      <div>&nbsp;&nbsp;└── <span class="tree-file">setup-shipwright-cert.sh</span></div>
+    </div>
+  </div>
+
+  <!-- Shipwright cert -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-green">🔐</div>
+      <div class="section-title">Shipwright webhook cert automation</div>
+    </div>
+    <div class="cert-grid">
+      <div class="cert-card">
+        <div class="cert-label">CSR generation</div>
+        <div class="cert-desc">Creates a certificate signing request for the webhook endpoint</div>
+      </div>
+      <div class="cert-card">
+        <div class="cert-label">Certificate approval</div>
+        <div class="cert-desc">Automatically approves the CSR via the Kubernetes certificates API</div>
+      </div>
+      <div class="cert-card">
+        <div class="cert-label">TLS secret creation</div>
+        <div class="cert-desc">Stores the signed cert and key in a Kubernetes Secret</div>
+      </div>
+      <div class="cert-card">
+        <div class="cert-label">CA bundle injection</div>
+        <div class="cert-desc">Patches the MutatingWebhookConfiguration with the CA bundle</div>
+      </div>
+    </div>
+    <div class="body-text">No manual certificate management required. Webhook restart and deployment readiness checks are included.</div>
+  </div>
+
+  <!-- Usage -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-green">▶</div>
+      <div class="section-title">Usage</div>
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">blanketops-environments install</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">blanketops-environments uninstall</span></div>
+      <div class="cmd-line" style="margin-top:6px"><span class="prompt">$</span><span class="cmd">blanketops-environments dependencies install</span></div>
+      <div class="cmd-line" style="margin-top:6px"><span class="prompt">$</span><span class="cmd">blanketops-environments cluster up [name]</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">blanketops-environments cluster down [name]</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">blanketops-environments cluster status [name]</span></div>
+    </div>
+  </div>
+
+  <!-- Build & install -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-blue">⚒</div>
+      <div class="section-title">Build &amp; install</div>
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">make build</span><span class="cmt"># standard binary</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">make static</span><span class="cmt"># fully static (Gokrazy-compatible)</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">make install</span><span class="cmt"># → $HOME/.local/bin or $HOME/bin</span></div>
+    </div>
+  </div>
+
+  <!-- Gokrazy workflow -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-amber">❄</div>
+      <div class="section-title">Gokrazy workflow</div>
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">make static</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">gok add ./bin/blanketops-environments-static</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">gok build</span></div>
+    </div>
+  </div>
+
+  <!-- Local testing -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-green">🧪</div>
+      <div class="section-title">Local testing</div>
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">kind create cluster</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">blanketops-environments install</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">kubectl get pods -A</span></div>
+    </div>
+  </div>
+
+  <!-- Project structure -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon icon-blue">📂</div>
+      <div class="section-title">Project structure</div>
+    </div>
+    <div class="tree-block">
+      <div><span class="tree-dir">blanketops-environments-cli/</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-file">main.go</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">cmd/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ install, uninstall, cluster</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">core/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ apply, kube, dependencies, wait</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">dependencies/</span>&nbsp; <span class="tree-ann">↳ embedded manifests per component</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">scripts/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ crossplane, externalsecrets, shipwright-cert</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">util/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ exec, fs, os helpers</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-file">magefile.go</span></div>
+      <div>&nbsp;&nbsp;└── <span class="tree-file">Makefile</span></div>
+    </div>
+  </div>
+
+  <!-- Footer / Contributing -->
+  <div class="footer">
+    <span class="footer-icon">🤝</span>
+    <span>Pull requests and improvements are welcome. The project is evolving toward a fully self-hosted platform bootstrap system for Kubernetes environments.</span>
+  </div>
+
+</div>
+</body>
+</html>
