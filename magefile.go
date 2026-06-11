@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	AppName     = "blanketops-environments"
+	AppName     = "environments-cli"
 	BuildDir    = "."
 	BuildOutput = "bin/" + AppName
 	StaticOut   = "bin/" + AppName + "-static"
