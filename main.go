@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"github.com/ntlaletsi70/blanketops-environments-cli/cmd"
 )
 
 func banner() {
@@ -15,16 +13,16 @@ func banner() {
 func usage() {
 	fmt.Println("Usage:")
 	fmt.Println("")
-	fmt.Println("  blanketops-environments install")
-	fmt.Println("  blanketops-environments uninstall")
-	fmt.Println("  blanketops-environments release apply")
+	fmt.Println("  environments-cli install")
+	fmt.Println("  environments-cli uninstall")
+	fmt.Println("  environments-cli release apply")
 	fmt.Println("")
-	fmt.Println("  blanketops-environments dependencies install")
-	fmt.Println("  blanketops-environments dependencies uninstall")
+	fmt.Println("  environments-cli dependencies install")
+	fmt.Println("  environments-cli dependencies uninstall")
 	fmt.Println("")
-	fmt.Println("  blanketops-environments cluster up [name]")
-	fmt.Println("  blanketops-environments cluster down [name]")
-	fmt.Println("  blanketops-environments cluster status [name]")
+	fmt.Println("  environments-cli cluster up [name]")
+	fmt.Println("  environments-cli cluster down [name]")
+	fmt.Println("  environments-cli cluster status [name]")
 	fmt.Println("")
 }
 
@@ -39,7 +37,7 @@ func main() {
 	switch os.Args[1] {
 
 	// ---------------------------------------------------------------------
-	// BACKWARD-COMPAT COMMANDS (LOCKED)
+	// INSTALL / UNINSTALL
 	// ---------------------------------------------------------------------
 	case "install":
 		if err := cmd.InstallAll(); err != nil {
@@ -60,7 +58,6 @@ func main() {
 			"dependencies/cluster_strategies/buildah_shipwright_managed_push_cr.yaml",
 			"dependencies/crossplane/provider.yaml",
 		}
-
 		if err := cmd.UninstallAll(paths); err != nil {
 			fmt.Println("❌", err)
 			os.Exit(1)
@@ -71,7 +68,7 @@ func main() {
 		return
 
 	// ---------------------------------------------------------------------
-	// ALIASES
+	// DEPENDENCIES
 	// ---------------------------------------------------------------------
 	case "dependencies":
 		if len(os.Args) < 3 {
@@ -99,7 +96,6 @@ func main() {
 				"dependencies/cluster_strategies/buildah_shipwright_managed_push_cr.yaml",
 				"dependencies/crossplane/provider.yaml",
 			}
-
 			if err := cmd.UninstallAll(paths); err != nil {
 				fmt.Println("❌", err)
 				os.Exit(1)
@@ -120,7 +116,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		// optional cluster name
 		name := ""
 		if len(os.Args) >= 4 {
 			name = os.Args[3]
