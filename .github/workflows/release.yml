@@ -14,6 +14,15 @@ jobs:
           with:
             fetch-depth: 0
 
+        - name: Setup Go
+          uses: actions/setup-go@v5
+          with:
+            go-version-file: go.mod
+            cache: true
+
+        - name: Install mage
+          run: go install github.com/magefile/mage@latest
+
         - name: Install git-cliff
           run: |
               GITCLIFF_VERSION="2.13.0"
@@ -22,6 +31,20 @@ jobs:
               sudo mv "git-cliff-${GITCLIFF_VERSION}/git-cliff" /usr/local/bin/git-cliff
               rm -rf git-cliff.tar.gz "git-cliff-${GITCLIFF_VERSION}"
               git-cliff --version
+
+        # Build all three release binaries from the tagged commit.
+        - name: Build binaries
+          run: |
+              mage build
+              mage static
+              mage staticarm64
+
+        - name: Verify binaries
+          run: |
+              test -x bin/bops
+              test -s bin/bops-static
+              test -s bin/bops-static-arm64
+              ./bin/bops || true   # banner+usage exits 1 by design; proves it executes
 
         - name: Checkout main
           run: |
@@ -46,6 +69,10 @@ jobs:
           uses: softprops/action-gh-release@v2
           with:
             body_path: RELEASE_NOTES.md
+            files: |
+                  bin/bops
+                  bin/bops-static
+                  bin/bops-static-arm64
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -53,24 +80,15 @@ jobs:
           run: |
               cat >> $GITHUB_STEP_SUMMARY <<EOF
               # 📦 GitHub Release Published
-
               **Version:** \`${{ github.ref_name }}\`
-
               ## Completed
-
+              - Built bops, bops-static, bops-static-arm64 from tag ${{ github.ref_name }}
               - Generated CHANGELOG.md using git-cliff
               - Committed changelog updates to main
               - Generated release notes
-              - Published GitHub Release
-
-              ## Artifacts
-
-              - CHANGELOG.md
-              - RELEASE_NOTES.md
-              - GitHub Release
-
-               ## Source Tag
-
-               \`${{ github.ref_name }}\`
-
+              - Published GitHub Release with binaries attached
+              ## Assets
+              - bops ($(du -h bin/bops | cut -f1))
+              - bops-static ($(du -h bin/bops-static | cut -f1))
+              - bops-static-arm64 ($(du -h bin/bops-static-arm64 | cut -f1))
               EOF
