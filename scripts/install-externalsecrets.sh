@@ -1,72 +1,107 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
 # Configuration
 # -----------------------------------------------------------------------------
+
 NAMESPACE="${NAMESPACE:-external-secrets}"
 RELEASE="${RELEASE:-external-secrets}"
 REPO_NAME="${REPO_NAME:-external-secrets}"
 REPO_URL="${REPO_URL:-https://charts.external-secrets.io}"
-VERSION="${VERSION:-0.10.7}"
+CHART="${CHART:-external-secrets}"
 TIMEOUT="${TIMEOUT:-5m}"
-
-CRD_URL="https://raw.githubusercontent.com/external-secrets/external-secrets/v${VERSION}/deploy/crds/bundle.yaml"
 
 # -----------------------------------------------------------------------------
 # Preconditions
 # -----------------------------------------------------------------------------
-command -v helm >/dev/null 2>&1 || { echo "❌ helm not found"; exit 1; }
-command -v kubectl >/dev/null 2>&1 || { echo "❌ kubectl not found"; exit 1; }
+
+require() {
+command -v "$1" >/dev/null 2>&1 || {
+echo "❌ $1 is required but not installed"
+exit 1
+}
+}
+
+require helm
+require kubectl
+require jq
 
 # -----------------------------------------------------------------------------
-# Namespace
+# Helm repo setup
 # -----------------------------------------------------------------------------
-kubectl get ns "$NAMESPACE" >/dev/null 2>&1 || kubectl create ns "$NAMESPACE"
 
-# -----------------------------------------------------------------------------
-# Helm repo (MUST exist)
-# -----------------------------------------------------------------------------
 if ! helm repo list | awk '{print $1}' | grep -qx "$REPO_NAME"; then
-  helm repo add "$REPO_NAME" "$REPO_URL"
+echo "➕ Adding Helm repo $REPO_NAME -> $REPO_URL"
+helm repo add "$REPO_NAME" "$REPO_URL"
+else
+echo "✅ Helm repo $REPO_NAME already present"
 fi
-helm repo update
+
+echo "🔄 Updating Helm repos..."
+helm repo update >/dev/null
 
 # -----------------------------------------------------------------------------
-# Install CRDs (authoritative source for 0.10.x)
+# Resolve latest chart version
 # -----------------------------------------------------------------------------
-echo "📦 Installing External Secrets CRDs ($VERSION)..."
-kubectl apply -f "$CRD_URL"
+
+echo "🔎 Resolving latest External Secrets chart version..."
+
+VERSION=$(helm search repo "$REPO_NAME/$CHART" -o json | jq -r '.[0].version')
+
+if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
+echo "❌ Unable to resolve External Secrets chart version"
+exit 1
+fi
+
+echo "📦 Latest chart version: $VERSION"
 
 # -----------------------------------------------------------------------------
-# Install / Upgrade controller (Helm OWNS runtime resources)
+# Install / Upgrade External Secrets
 # -----------------------------------------------------------------------------
-echo "🚀 Installing External Secrets controller..."
-helm upgrade --install "$RELEASE" "$REPO_NAME/external-secrets" \
+
+echo "🚀 Installing External Secrets (release: $RELEASE)"
+
+helm upgrade --install "$RELEASE" "$REPO_NAME/$CHART" \
   --namespace "$NAMESPACE" \
   --create-namespace \
-  --version "$VERSION" \
   --wait \
   --timeout "$TIMEOUT" \
-  --set installCRDs=false
+  --version "$VERSION"
 
 # -----------------------------------------------------------------------------
-# Readiness
+# Wait for CRDs
 # -----------------------------------------------------------------------------
-kubectl -n "$NAMESPACE" wait \
-  --for=condition=Available \
-  deployment/external-secrets \
-  --timeout="$TIMEOUT"
+
+echo "⏳ Waiting for External Secrets CRDs..."
+
+kubectl wait --for=condition=Established crd/externalsecrets.external-secrets.io --timeout="$TIMEOUT"
+kubectl wait --for=condition=Established crd/clusterexternalsecrets.external-secrets.io --timeout="$TIMEOUT"
+kubectl wait --for=condition=Established crd/clustersecretstores.external-secrets.io --timeout="$TIMEOUT"
+kubectl wait --for=condition=Established crd/secretstores.external-secrets.io --timeout="$TIMEOUT"
 
 # -----------------------------------------------------------------------------
-# Sanity checks
+# Wait for controller
 # -----------------------------------------------------------------------------
-echo "🔍 Verifying ExternalSecret CRD exists..."
-kubectl get crd externalsecrets.external-secrets.io
 
-echo "🔍 Pods:"
+echo "⏳ Waiting for External Secrets controller..."
+
+kubectl -n "$NAMESPACE" rollout status deployment/external-secrets --timeout="$TIMEOUT"
+
+# -----------------------------------------------------------------------------
+# Post-install verification
+# -----------------------------------------------------------------------------
+
+echo "🔍 Verifying installation..."
+
 kubectl get pods -n "$NAMESPACE"
 
-echo "✅ External Secrets installed successfully"
-echo "   Version:   $VERSION"
-echo "   Namespace: $NAMESPACE"
+echo "🔍 Checking CRDs..."
+
+kubectl get crd | grep external-secrets || true
+
+echo "🎉 External Secrets installed successfully"
+echo "Namespace: $NAMESPACE"
+echo "Release:   $RELEASE"
+echo "Version:   $VERSION"

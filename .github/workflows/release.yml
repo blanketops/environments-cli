@@ -1,5 +1,41 @@
 name: Release
 on:
+<<<<<<< Updated upstream
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: false
+
+      - name: Install Mage
+        run: go install github.com/magefile/mage@latest
+
+      - name: Build binaries
+        run: |
+          mage build
+          mage static
+          mage staticarm64
+
+      - name: Install git-cliff
+        run: |
+          curl -L https://github.com/orhun/git-cliff/releases/download/v2.4.0/git-cliff-2.4.0-x86_64-unknown-linux-gnu.tar.gz -o cliff.tar.gz
+          tar -xzf cliff.tar.gz
+          sudo mv git-cliff-2.4.0/git-cliff /usr/local/bin/git-cliff
+=======
     push:
         tags:
             - "v*"
@@ -7,60 +43,75 @@ permissions:
     contents: write
 jobs:
     release:
-        runs-on: self-hosted
-        steps:
-            - name: Checkout tag
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
+      runs-on: self-hosted
+      steps:
+        - name: Checkout tag
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
 
-            - name: Set up Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version: "1.25"
-                  cache: false
+        - name: Checkout main
+          run: |
+              git checkout main
+              git pull origin main
 
-            - name: Install Mage
-              run: go install github.com/magefile/mage@latest
+        - name: Generate CHANGELOG.md
+          run: git-cliff --config .cliff.toml --output CHANGELOG.md
+>>>>>>> Stashed changes
 
-            - name: Build binaries
-              run: |
-                  mage build
-                  mage static
-                  mage staticarm64
+        - name: Commit changelog
+          run: |
+              git config user.name "github-actions"
+              git config user.email "actions@github.com"
+              git add CHANGELOG.md
+              git commit -m "chore(release): update changelog for ${{ github.ref_name }}" || echo "No changes"
+              git push origin main
 
-            - name: Install git-cliff
-              run: |
-                  curl -L https://github.com/orhun/git-cliff/releases/download/v2.4.0/git-cliff-2.4.0-x86_64-unknown-linux-gnu.tar.gz -o cliff.tar.gz
-                  tar -xzf cliff.tar.gz
-                  sudo mv git-cliff-2.4.0/git-cliff /usr/local/bin/git-cliff
+        - name: Generate release notes
+          run: git-cliff --config .cliff.toml --latest --output RELEASE_NOTES.md
 
-            - name: Checkout main
-              run: |
-                  git checkout main
-                  git pull origin main
+        - name: Create GitHub Release
+          uses: softprops/action-gh-release@v2
+          with:
+            body_path: RELEASE_NOTES.md
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Generate CHANGELOG.md
-              run: git-cliff --config .cliff.toml --output CHANGELOG.md
+        - name: Release Summary
+          run: |
+              cat >> $GITHUB_STEP_SUMMARY <<EOF
+              # 📦 GitHub Release Published
 
-            - name: Commit changelog
-              run: |
-                  git config user.name "github-actions"
-                  git config user.email "actions@github.com"
-                  git add CHANGELOG.md
-                  git commit -m "chore(release): update changelog for ${{ github.ref_name }}" || echo "No changes"
-                  git push origin main
+<<<<<<< Updated upstream
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: |
+            bin/environments-cli
+            bin/environments-cli-static
+            bin/environments-cli-static-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+=======
+              **Version:** \`${{ github.ref_name }}\`
 
-            - name: Generate release notes
-              run: git-cliff --config .cliff.toml --latest --output RELEASE_NOTES.md
+              ## Completed
 
-            - name: Create GitHub Release
-              uses: softprops/action-gh-release@v2
-              with:
-                  body_path: RELEASE_NOTES.md
-                  files: |
-                      bin/blanketops-environments
-                      bin/blanketops-environments-static
-                      bin/blanketops-environments-static-arm64
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              - Generated CHANGELOG.md using git-cliff
+              - Committed changelog updates to main
+              - Generated release notes
+              - Published GitHub Release
+
+              ## Artifacts
+
+              - CHANGELOG.md
+              - RELEASE_NOTES.md
+              - GitHub Release
+
+               ## Source Tag
+
+               \`${{ github.ref_name }}\`
+
+              EOF
+>>>>>>> Stashed changes
