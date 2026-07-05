@@ -6,22 +6,12 @@ on:
       - main
   pull_request:
     branches: [develop]
-
 jobs:
   build:
     runs-on: self-hosted
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-          cache: false
-
-      - name: Install Mage
-        run: go install github.com/magefile/mage@latest
 
       - name: Build CLI (Dynamic)
         run: mage build
@@ -40,15 +30,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-          cache: false
-
-      - name: Install Mage
-        run: go install github.com/magefile/mage@latest
-
       - name: Build Static Binaries (AMD64 & ARM64)
         run: |
           mage static
@@ -60,3 +41,6 @@ jobs:
           name: blanketops-environments-cli-static
           path: bin/blanketops-environments-cli-static*
           retention-days: 14
+
+      - name: CLI Summary
+        run: |

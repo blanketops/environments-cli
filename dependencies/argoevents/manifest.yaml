@@ -310,6 +310,60 @@ subjects:
   name: argo-events-sa
   namespace: argo-events
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-events-githubevent-creator
+  namespace: argo-events
+rules:
+- apiGroups:
+  - events.blanketops.dev
+  resources:
+  - githubevents
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-events-sensor-configmap
+  namespace: argo-events
+rules:
+- apiGroups: [ "" ]
+  resources: [ "configmaps" ]
+  verbs: [ "create", "get", "list", "watch" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argo-events-sensor-configmap
+  namespace: argo-events
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: argo-events
+roleRef:
+  kind: Role
+  name: argo-events-sensor-configmap
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argo-events-githubevent-creator-binding
+  namespace: argo-events
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: argo-events
+roleRef:
+  kind: Role
+  name: argo-events-githubevent-creator
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: v1
 data:
   controller-config.yaml: |
