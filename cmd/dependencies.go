@@ -1,7 +1,23 @@
-package core
+/*
+Copyright 2026 The BlanketOps Authors.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package cmd
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +27,8 @@ import (
 	"time"
 )
 
+var Assets embed.FS
+
 // ---------------------------------------------------------------------------
 // DependenciesInstall (uses embedded assets)
 // ---------------------------------------------------------------------------
@@ -19,31 +37,24 @@ func DependenciesInstall(paths []string) error {
 	if err != nil {
 		return err
 	}
-
 	mapper, err := NewRESTMapper(cfg)
 	if err != nil {
 		return err
 	}
-
 	for _, path := range paths {
-
 		fmt.Printf("📄 Applying %s\n", path)
-
 		data, err := Assets.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("read manifest %s: %w", path, err)
 		}
-
 		objs, err := decodeYAMLStream(bytes.NewReader(data))
 		if err != nil {
 			return fmt.Errorf("decode %s: %w", path, err)
 		}
-
 		if err := robustApply(dc, mapper, objs); err != nil {
 			return fmt.Errorf("apply %s: %w", path, err)
 		}
 	}
-
 	return nil
 }
 
@@ -51,7 +62,6 @@ func DependenciesInstall(paths []string) error {
 // ApplyFromURL
 // ---------------------------------------------------------------------------
 func ApplyFromURL(url string) error {
-
 	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch url %s: %w", url, err)
@@ -67,7 +77,6 @@ func ApplyFromURL(url string) error {
 	if err != nil {
 		return err
 	}
-
 	mapper, err := NewRESTMapper(cfg)
 	if err != nil {
 		return err
@@ -78,7 +87,6 @@ func ApplyFromURL(url string) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -86,12 +94,10 @@ func ApplyFromURL(url string) error {
 // ApplyEmbeddedDir
 // ---------------------------------------------------------------------------
 func ApplyEmbeddedDir(path string) error {
-
 	dc, cfg, err := NewDynamicClient()
 	if err != nil {
 		return err
 	}
-
 	mapper, err := NewRESTMapper(cfg)
 	if err != nil {
 		return err
@@ -103,28 +109,22 @@ func ApplyEmbeddedDir(path string) error {
 	}
 
 	for _, e := range entries {
-
 		if e.IsDir() {
 			continue
 		}
-
 		file := filepath.Join(path, e.Name())
-
 		data, err := Assets.ReadFile(file)
 		if err != nil {
 			return err
 		}
-
 		objs, err := decodeYAMLStream(bytes.NewReader(data))
 		if err != nil {
 			return err
 		}
-
 		if err := robustApply(dc, mapper, objs); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -132,17 +132,12 @@ func ApplyEmbeddedDir(path string) error {
 // Flux CRDs
 // ---------------------------------------------------------------------------
 func InstallFluxCRDs() error {
-
 	fmt.Println("📘 Installing Flux CRDs...")
-
 	url := "https://github.com/fluxcd/flux2/releases/latest/download/install.yaml"
-
 	if err := ApplyFromURL(url); err != nil {
 		return err
 	}
-
 	time.Sleep(2 * time.Second)
-
 	return nil
 }
 
@@ -150,13 +145,11 @@ func InstallFluxCRDs() error {
 // Script runner (embedded)
 // ---------------------------------------------------------------------------
 func runScript(path string, args ...string) error {
-
 	data, err := Assets.ReadFile(path)
 	if err != nil {
 		return err
 	}
-
-	tmp, err := os.CreateTemp("", "blanketops-script-*")
+	tmp, err := os.CreateTemp("", "environments-script-*")
 	if err != nil {
 		return err
 	}
@@ -165,13 +158,11 @@ func runScript(path string, args ...string) error {
 	if _, err := io.Copy(tmp, bytes.NewReader(data)); err != nil {
 		return err
 	}
-
 	tmp.Close()
 
 	cmd := exec.Command("bash", append([]string{tmp.Name()}, args...)...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
 	return cmd.Run()
 }
 

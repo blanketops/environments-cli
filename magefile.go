@@ -1,5 +1,20 @@
 //go:build mage
 
+/*
+Copyright 2026 The BlanketOps Authors.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
@@ -9,11 +24,10 @@ import (
 )
 
 var (
-	AppName     = "blanketops-environments"
+	AppName     = "bops"
 	BuildDir    = "."
 	BuildOutput = "bin/" + AppName
 	StaticOut   = "bin/" + AppName + "-static"
-
 	InstallDir  = os.Getenv("HOME") + "/.local/bin"
 	FallbackDir = os.Getenv("HOME") + "/bin"
 )
@@ -31,142 +45,103 @@ func ensureBin() {
 
 func Build() error {
 	fmt.Println("🔧 Building", AppName)
-
 	ensureBin()
-
 	err := run("go", "build", "-o", BuildOutput, BuildDir)
 	if err != nil {
 		return err
 	}
-
 	fmt.Println("✅ Build complete:", BuildOutput)
-	return run("file", BuildOutput)
+	return nil
 }
 
 func Static() error {
 	fmt.Println("🏗 Building static binary")
-
 	ensureBin()
-
 	cmd := exec.Command("go", "build",
 		"-trimpath",
 		"-ldflags", "-s -w",
 		"-o", StaticOut,
 		BuildDir,
 	)
-
 	cmd.Env = append(os.Environ(),
 		"CGO_ENABLED=0",
 		"GOOS=linux",
 		"GOARCH=amd64",
 	)
-
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-
 	fmt.Println("🔎 Verifying static binary")
 	run("ldd", StaticOut)
-
 	fmt.Println("➡ Ready for gokrazy")
 	return nil
 }
 
 func StaticArm64() error {
 	fmt.Println("🏗 Building static ARM64")
-
 	ensureBin()
-
 	cmd := exec.Command("go", "build",
 		"-ldflags", "-s -w",
 		"-o", "bin/"+AppName+"-static-arm64",
 		BuildDir,
 	)
-
 	cmd.Env = append(os.Environ(),
 		"CGO_ENABLED=0",
 		"GOOS=linux",
 		"GOARCH=arm64",
 	)
-
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-
-	run("file", "bin/"+AppName+"-static-arm64")
-
 	fmt.Println("➡ Ready for gokrazy")
 	return nil
 }
 
 func Install() error {
 	fmt.Println("📦 Installing", AppName)
-
 	if err := Build(); err != nil {
 		return err
 	}
-
 	os.MkdirAll(InstallDir, 0755)
-
 	target := InstallDir + "/" + AppName
-
 	err := run("cp", BuildOutput, target)
 	if err != nil {
 		return err
 	}
-
 	run("chmod", "+x", target)
-
 	fmt.Println("🔍 Testing executability")
-
 	testFile := InstallDir + "/.__exec_test"
-
 	os.WriteFile(testFile, []byte("#!/bin/sh\necho test_ok\n"), 0755)
-
 	err = run(testFile)
-
 	os.Remove(testFile)
-
 	if err != nil {
 		fmt.Println("⚠️ noexec detected — switching to", FallbackDir)
-
 		os.MkdirAll(FallbackDir, 0755)
-
 		target = FallbackDir + "/" + AppName
-
 		run("cp", BuildOutput, target)
 		run("chmod", "+x", target)
-
 		fmt.Println("🎉 Installed to", target)
 		fmt.Println("ℹ️ Add to PATH:")
 		fmt.Println("export PATH=\"" + FallbackDir + ":$PATH\"")
 	} else {
 		fmt.Println("✅ Installed to", target)
 	}
-
 	return nil
 }
 
 func Uninstall() error {
 	fmt.Println("🧹 Uninstalling", AppName)
-
 	os.Remove(InstallDir + "/" + AppName)
 	os.Remove(FallbackDir + "/" + AppName)
-
 	run("sudo", "rm", "-f", "/usr/local/bin/"+AppName)
-
 	os.Remove("bin/" + AppName)
 	os.Remove("bin/" + AppName + "-static")
 	os.Remove("bin/" + AppName + "-static-arm64")
-
 	fmt.Println("✔️ All copies removed")
-
 	return nil
 }
 

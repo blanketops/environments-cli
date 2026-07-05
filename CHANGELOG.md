@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.6] - 2026-04-27
+
+### ⚙️ Miscellaneous Tasks
+
+- *(buildTool)* Fix and update magefile
+
+### Release
+
+- Merge release/v0.0.6 into main
+
+## [0.0.5] - 2026-04-26
+
+### Bugfix
+
+- *(deps)* Crossplane eso setup force
+- *(ci)* Add workflows for release
+
+## [ls] - 2026-04-26
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Update changelog for v0.0.4
+
 ## [0.0.4] - 2026-03-17
 
 ### ⚙️ Miscellaneous Tasks
