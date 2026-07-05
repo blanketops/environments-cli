@@ -1,41 +1,5 @@
 name: Release
 on:
-<<<<<<< Updated upstream
-  push:
-    tags:
-      - "v*"
-permissions:
-  contents: write
-jobs:
-  release:
-    runs-on: self-hosted
-    steps:
-      - name: Checkout tag
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-          cache: false
-
-      - name: Install Mage
-        run: go install github.com/magefile/mage@latest
-
-      - name: Build binaries
-        run: |
-          mage build
-          mage static
-          mage staticarm64
-
-      - name: Install git-cliff
-        run: |
-          curl -L https://github.com/orhun/git-cliff/releases/download/v2.4.0/git-cliff-2.4.0-x86_64-unknown-linux-gnu.tar.gz -o cliff.tar.gz
-          tar -xzf cliff.tar.gz
-          sudo mv git-cliff-2.4.0/git-cliff /usr/local/bin/git-cliff
-=======
     push:
         tags:
             - "v*"
@@ -43,12 +7,21 @@ permissions:
     contents: write
 jobs:
     release:
-      runs-on: self-hosted
+      runs-on: ubuntu-latest
       steps:
         - name: Checkout tag
           uses: actions/checkout@v4
           with:
             fetch-depth: 0
+
+        - name: Install git-cliff
+          run: |
+              GITCLIFF_VERSION="2.13.0"
+              curl -L "https://github.com/orhun/git-cliff/releases/download/v${GITCLIFF_VERSION}/git-cliff-${GITCLIFF_VERSION}-x86_64-unknown-linux-gnu.tar.gz" -o git-cliff.tar.gz
+              tar xzf git-cliff.tar.gz
+              sudo mv "git-cliff-${GITCLIFF_VERSION}/git-cliff" /usr/local/bin/git-cliff
+              rm -rf git-cliff.tar.gz "git-cliff-${GITCLIFF_VERSION}"
+              git-cliff --version
 
         - name: Checkout main
           run: |
@@ -57,7 +30,6 @@ jobs:
 
         - name: Generate CHANGELOG.md
           run: git-cliff --config .cliff.toml --output CHANGELOG.md
->>>>>>> Stashed changes
 
         - name: Commit changelog
           run: |
@@ -82,18 +54,6 @@ jobs:
               cat >> $GITHUB_STEP_SUMMARY <<EOF
               # 📦 GitHub Release Published
 
-<<<<<<< Updated upstream
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: RELEASE_NOTES.md
-          files: |
-            bin/environments-cli
-            bin/environments-cli-static
-            bin/environments-cli-static-arm64
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-=======
               **Version:** \`${{ github.ref_name }}\`
 
               ## Completed
@@ -114,4 +74,3 @@ jobs:
                \`${{ github.ref_name }}\`
 
               EOF
->>>>>>> Stashed changes
