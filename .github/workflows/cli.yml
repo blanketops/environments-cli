@@ -8,27 +8,48 @@ on:
     branches: [develop]
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install mage
+        run: go install github.com/magefile/mage@latest
 
       - name: Build CLI (Dynamic)
         run: mage build
 
+      - name: Smoke test
+        run: ./bin/bops || true   # banner+usage exits 1 by design; proves it executes
+
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: blanketops-environments-cli
-          path: bin/blanketops-environments-cli
+          name: bops
+          path: bin/bops
           retention-days: 14
 
   static-build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: build
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install mage
+        run: go install github.com/magefile/mage@latest
 
       - name: Build Static Binaries (AMD64 & ARM64)
         run: |
@@ -38,9 +59,35 @@ jobs:
       - name: Upload Static Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: blanketops-environments-cli-static
-          path: bin/blanketops-environments-cli-static*
+          name: bops-static
+          path: bin/bops-static*
           retention-days: 14
 
       - name: CLI Summary
+        if: always()
         run: |
+          {
+            echo "## 🛠 BlanketOps Environments CLI — Build"
+            echo ""
+            echo "| Item | Value |"
+            echo "| --- | --- |"
+            echo "| Ref | \`${GITHUB_REF_NAME}\` |"
+            echo "| Commit | \`${GITHUB_SHA::12}\` |"
+            echo "| Trigger | ${GITHUB_EVENT_NAME} |"
+            echo "| Go | \`$(grep '^go ' go.mod | awk '{print $2}')\` |"
+            echo "| Job status | **${{ job.status }}** |"
+            echo ""
+            echo "### Binaries"
+            echo ""
+            echo "| Binary | Size |"
+            echo "| --- | --- |"
+            for b in bin/bops-static bin/bops-static-arm64; do
+              if [ -f "$b" ]; then
+                echo "| \`$(basename "$b")\` | $(du -h "$b" | cut -f1) |"
+              else
+                echo "| \`$(basename "$b")\` | ⚠️ not produced |"
+              fi
+            done
+            echo ""
+            echo "Embedded assets: $(find dependencies -name '*.yaml' -o -name '*.yml' 2>/dev/null | wc -l) manifests, $(find scripts -type f 2>/dev/null | wc -l) scripts"
+          } >> "$GITHUB_STEP_SUMMARY"
