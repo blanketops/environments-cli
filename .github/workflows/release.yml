@@ -5,7 +5,7 @@ on:
       - "v*"
 permissions:
   contents: write
-  id-token: write # Required for OIDC (Sigstore/Cosign)
+  id-token: write    # Required for OIDC (Sigstore/Cosign)
   attestations: write # Required for GitHub Actions Attestations
 
 jobs:
@@ -29,6 +29,8 @@ jobs:
           curl -L https://github.com/orhun/git-cliff/releases/download/v2.4.0/git-cliff-2.4.0-x86_64-unknown-linux-gnu.tar.gz -o cliff.tar.gz
           tar -xzf cliff.tar.gz
           sudo mv git-cliff-2.4.0/git-cliff /usr/local/bin/git-cliff
+          # Install Cosign
+          go install github.com/sigstore/cosign/v2/cmd/cosign@latest
 
       - name: Build binaries
         run: |
@@ -36,7 +38,13 @@ jobs:
           mage static
           mage staticarm64
 
-      # --- Attestations & Signing ---
+      # 1. Sign binaries with Cosign (Keyless)
+      - name: Sign binaries
+        run: |
+          cosign sign-blob --yes --output-signature bin/bops-static.sig bin/bops-static
+          cosign sign-blob --yes --output-signature bin/bops-static-arm64.sig bin/bops-static-arm64
+
+      # 2. Attest build provenance
       - name: Generate Attestations
         uses: actions/attest-build-provenance@v2
         with:
@@ -44,18 +52,7 @@ jobs:
             bin/bops-static
             bin/bops-static-arm64
 
-      # --- Release Process ---
-      - name: Commit changelog
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add CHANGELOG.md
-          git commit -m "chore(release): update changelog for ${{ github.ref_name }}" || echo "No changes"
-          git push origin main
-
-      - name: Generate release notes
-        run: git-cliff --config .cliff.toml --latest --output RELEASE_NOTES.md
-
+      # 3. Create Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -63,14 +60,19 @@ jobs:
           files: |
             bin/bops-static
             bin/bops-static-arm64
+            bin/bops-static.sig
+            bin/bops-static-arm64.sig
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Release Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<EOF
-          # 📦 GitHub Release Published
-          - **Version:** \`${{ github.ref_name }}\`
-          - **Status:** Signed & Attested
-          - **Artifacts:** \`bops-static\`, \`bops-static-arm64\`
+          # 🚀 Release Published: ${{ github.ref_name }}
+          ## Security Summary
+          - **Cosign Signatures:** Created \`.sig\` files for static binaries.
+          - **Provenance:** Attestations generated and linked to GitHub.
+          - **Verification:**
+            - **Sig:** \`cosign verify-blob --certificate-identity-regexp ".*" --cert-oidc-issuer "https://token.actions.githubusercontent.com" --signature bin/bops-static.sig bin/bops-static\`
+            - **Attest:** \`gh attest verify bin/bops-static --owner ${{ github.repository_owner }}\`
           EOF
