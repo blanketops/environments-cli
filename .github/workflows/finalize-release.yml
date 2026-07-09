@@ -1,3 +1,6 @@
+# Manually-triggered: second step of the release flow. Merges the
+# release/<version> branch into main, tags the release (which triggers
+# release.yml), syncs main back into develop, then deletes the release branch.
 name: Finalize Release
 on:
   workflow_dispatch:
@@ -49,15 +52,14 @@ jobs:
       - name: Release Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<EOF
-          # 🎉 Release Finalized **Version:** \`${{ github.event.inputs.version }}\` 
-          ## Completed 
-          - Merged \`release/${{ github.event.inputs.version }}\` into \`main\` 
-          - Created Git tag \`${{ github.event.inputs.version }}\` 
+          # 🎉 Release Finalized: \`${{ github.event.inputs.version }}\`
+          ## Completed
+          - Merged \`release/${{ github.event.inputs.version }}\` into \`main\`
+          - Created Git tag \`${{ github.event.inputs.version }}\`
           - Synced \`main\` back into \`develop\`
-          - Deleted release branch 
-          ## Branch Flow 
-          -  release/${{ github.event.inputs.version }} ↓ main ↓ develop 
-          ## Release Tag \`${{ github.event.inputs.version }}\` 
+          - Deleted release branch
+          ## Branch Flow
+          - release/${{ github.event.inputs.version }} → main → develop
           ## Next Steps
-          - Pushing the tag triggers the **Release** workflow which generates the changelog and GitHub Release. 
+          - Pushing the tag triggers the **Release** workflow which generates the changelog and GitHub Release.
           EOF

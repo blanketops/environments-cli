@@ -1,3 +1,6 @@
+# CI build workflow. Runs on every push to develop/main and on PRs targeting
+# develop. Produces short-lived (14-day) build artifacts for review/testing —
+# this is NOT the release pipeline (see release.yml for tagged releases).
 name: Build BlanketOps Environments CLI
 on:
   push:
@@ -8,6 +11,7 @@ on:
     branches: [develop]
 
 jobs:
+  # Dynamic (glibc-linked) build — quick smoke build, uploaded for reference.
   build:
     runs-on: ubuntu-latest
     steps:
@@ -24,9 +28,15 @@ jobs:
           path: bin/bops
           retention-days: 14
 
+  # Static (AMD64 & ARM64) build — the binaries that matter for distribution,
+  # so they're signed and attested the same way release.yml does for tags.
   static-build:
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      contents: read
+      id-token: write    # Required for OIDC (Sigstore/Cosign)
+      attestations: write # Required for GitHub Actions Attestations
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -36,6 +46,23 @@ jobs:
           mage static
           mage staticarm64
 
+      - name: Install Cosign
+        run: go install github.com/sigstore/cosign/v2/cmd/cosign@latest
+
+      # 1. Sign binaries with Cosign (Keyless)
+      - name: Sign binaries
+        run: |
+          cosign sign-blob --yes --output-signature bin/bops-static.sig bin/bops-static
+          cosign sign-blob --yes --output-signature bin/bops-static-arm64.sig bin/bops-static-arm64
+
+      # 2. Attest build provenance
+      - name: Generate Attestations
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            bin/bops-static
+            bin/bops-static-arm64
+
       - name: Upload Static Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -43,6 +70,8 @@ jobs:
           path: |
             bin/bops-static
             bin/bops-static-arm64
+            bin/bops-static.sig
+            bin/bops-static-arm64.sig
           retention-days: 14
 
       - name: CLI Summary
@@ -56,6 +85,10 @@ jobs:
           | **Dynamic (Linux)** | \`bin/bops\` |
           | **Static (AMD64)** | \`bin/bops-static\` |
           | **Static (ARM64)** | \`bin/bops-static-arm64\` |
+
+          ### Security
+          - **Cosign Signatures:** Created \`.sig\` files for static binaries.
+          - **Provenance:** Attestations generated and linked to GitHub.
 
           > [!NOTE]
           > Artifacts are retained for **14 days**.

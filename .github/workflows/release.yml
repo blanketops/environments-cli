@@ -1,3 +1,6 @@
+# Tag-triggered release pipeline. Builds static binaries, signs them with
+# Cosign (keyless/OIDC), generates GitHub build-provenance attestations, then
+# publishes a GitHub Release with the binaries and their signatures attached.
 name: Release
 on:
   push:

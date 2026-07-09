@@ -1,3 +1,6 @@
+# Manually-triggered: cuts a release/<version> branch off develop and opens
+# a PR into main. First step of the two-step release flow — run
+# "Finalize Release" once all fix PRs are merged into the release branch.
 name: Create Release
 on:
   workflow_dispatch:
