@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/ntlaletsi70/blanketops-environments-cli/util"
 )
 
 // ApplyRawYAML applies raw YAML text using robustApply
@@ -35,7 +37,13 @@ func ApplyRawYAML(dc dynamic.Interface, mapper meta.RESTMapper, data []byte) err
 	if err != nil {
 		return err
 	}
-	return robustApply(dc, mapper, objs)
+	p := util.NewSpinner("raw YAML")
+	if err := robustApply(dc, mapper, objs, p); err != nil {
+		p.Fail(err)
+		return err
+	}
+	p.Done("")
+	return nil
 }
 
 // applyUnstructured performs create-or-update (safe for CRDs) using REST mapping.
@@ -129,9 +137,9 @@ func deleteUnstructured(dc dynamic.Interface, mapper meta.RESTMapper, obj *unstr
 //	✔ retry discovery mapping (CRDs may not be ready instantly)
 //	✔ correct cluster-scoped handling (NO Namespace())
 //	✔ create-or-update
-func robustApply(dc dynamic.Interface, mapper meta.RESTMapper, objs []*unstructured.Unstructured) error {
+func robustApply(dc dynamic.Interface, mapper meta.RESTMapper, objs []*unstructured.Unstructured, p *util.Spinner) error {
 
-	fmt.Println("📌 Preparing resources...")
+	p.Update("preparing resources")
 
 	// 1. Split CRDs first
 	var crds, others []*unstructured.Unstructured
@@ -147,7 +155,7 @@ func robustApply(dc dynamic.Interface, mapper meta.RESTMapper, objs []*unstructu
 	// Helper to apply a single object
 	applyOne := func(o *unstructured.Unstructured) error {
 		gvk := o.GroupVersionKind()
-		fmt.Printf("🔧 Applying %s %s\n", gvk.Kind, o.GetName())
+		p.Update(fmt.Sprintf("%s %s", gvk.Kind, o.GetName()))
 
 		// Get REST mapping with retry
 		var mapping *meta.RESTMapping
@@ -206,18 +214,16 @@ func robustApply(dc dynamic.Interface, mapper meta.RESTMapper, objs []*unstructu
 
 	// 2. Apply CRDs FIRST
 	if len(crds) > 0 {
-		fmt.Println("📘 Applying CRDs first...")
 		for _, c := range crds {
 			if err := applyOne(c); err != nil {
 				return fmt.Errorf("CRD apply failed: %w", err)
 			}
 		}
-		fmt.Println("⏳ Waiting for CRDs to register in discovery...")
+		p.Update("waiting for CRDs to register")
 		time.Sleep(1 * time.Second)
 	}
 
 	// 3. Apply everything else
-	fmt.Println("📦 Applying remaining resources...")
 	for _, o := range others {
 		if err := applyOne(o); err != nil {
 			return err
