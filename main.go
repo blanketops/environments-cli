@@ -53,10 +53,15 @@ var usageEntries = [][]usageEntry{
 		{"bops install", "Install the full platform stack (all dependencies)"},
 		{"bops uninstall", "Remove all installed platform components"},
 	},
-	{
-		{"bops dependencies install", "Install only the dependency manifests"},
-		{"bops dependencies uninstall", "Remove only the dependency manifests"},
-	},
+	// `dependencies install`/`dependencies uninstall` are commented out below
+	// (see main()) — they call the exact same InstallAll/UninstallAll as
+	// `install`/`uninstall` with no differentiation today, so keeping both
+	// names was just confusing. Revisit once dependency-layer installs are
+	// actually split out from the full install.
+	// {
+	// 	{"bops dependencies install", "Install only the dependency manifests"},
+	// 	{"bops dependencies uninstall", "Remove only the dependency manifests"},
+	// },
 	{
 		{"bops cluster up [name]", "Create the named cluster if it doesn't exist"},
 		{"bops cluster down [name]", "Delete the named cluster"},
@@ -112,29 +117,34 @@ func main() {
 		fmt.Println("ℹ️ dist command reserved (no-op for now)")
 		return
 	// ---------------------------------------------------------------------
-	// DEPENDENCIES
+	// DEPENDENCIES — commented out, not deleted. install/uninstall above
+	// call the exact same cmd.InstallAll/cmd.UninstallAll with zero
+	// differentiation from these, so exposing both was just confusing.
+	// Bring this back once dependency-layer installs are actually split
+	// out from the full install (see main.go usageEntries for the matching
+	// usage-text removal).
 	// ---------------------------------------------------------------------
-	case "dependencies":
-		if len(os.Args) < 3 {
-			usage()
-			os.Exit(1)
-		}
-		switch os.Args[2] {
-		case "install":
-			if err := cmd.InstallAll(); err != nil {
-				fmt.Println("❌", err)
-				os.Exit(1)
-			}
-		case "uninstall":
-			if err := cmd.UninstallAll(uninstallPaths); err != nil {
-				fmt.Println("❌", err)
-				os.Exit(1)
-			}
-		default:
-			fmt.Println("Unknown dependencies command:", os.Args[2])
-			usage()
-			os.Exit(1)
-		}
+	// case "dependencies":
+	// 	if len(os.Args) < 3 {
+	// 		usage()
+	// 		os.Exit(1)
+	// 	}
+	// 	switch os.Args[2] {
+	// 	case "install":
+	// 		if err := cmd.InstallAll(); err != nil {
+	// 			fmt.Println("❌", err)
+	// 			os.Exit(1)
+	// 		}
+	// 	case "uninstall":
+	// 		if err := cmd.UninstallAll(uninstallPaths); err != nil {
+	// 			fmt.Println("❌", err)
+	// 			os.Exit(1)
+	// 		}
+	// 	default:
+	// 		fmt.Println("Unknown dependencies command:", os.Args[2])
+	// 		usage()
+	// 		os.Exit(1)
+	// 	}
 	// ---------------------------------------------------------------------
 	// CLUSTER
 	// ---------------------------------------------------------------------
