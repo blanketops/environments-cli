@@ -43,6 +43,16 @@ func ensureBin() {
 	os.MkdirAll("bin", 0755)
 }
 
+func Vet() error {
+	fmt.Println("🔍 Vetting", AppName)
+	return run("go", "vet", "./...")
+}
+
+func Test() error {
+	fmt.Println("🧪 Testing", AppName)
+	return run("go", "test", "./...")
+}
+
 func Build() error {
 	fmt.Println("🔧 Building", AppName)
 	ensureBin()
