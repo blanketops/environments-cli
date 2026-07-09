@@ -53,3 +53,20 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
+
+      - name: CodeQL Summary
+        if: always()
+        run: |
+          {
+            echo "## 🔎 CodeQL Analysis"
+            echo ""
+            echo "| Item | Value |"
+            echo "| --- | --- |"
+            echo "| Language | \`${{ matrix.language }}\` |"
+            echo "| Build mode | \`${{ matrix.build-mode }}\` |"
+            echo "| Ref | \`${GITHUB_REF_NAME}\` |"
+            echo "| Commit | \`${GITHUB_SHA::12}\` |"
+            echo "| Job status | **${{ job.status }}** |"
+            echo ""
+            echo "Findings (if any) are listed under **Security → Code scanning alerts**, not here."
+          } >> "$GITHUB_STEP_SUMMARY"
