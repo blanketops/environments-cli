@@ -22,9 +22,24 @@ import (
 	"strings"
 )
 
+// dirPriority orders manifest application when directories have a real
+// dependency relationship that alphabetical order can't express — e.g.
+// cluster_strategies/buildah_shipwright_managed_push_cr.yaml creates a
+// ClusterBuildStrategy, a CRD that shipwright/shipwright_build.yaml is
+// the one that installs. Applying alphabetically put "cluster_strategies"
+// before "shipwright" and the apply timed out waiting on a CRD that
+// didn't exist yet. Directories not listed here default to priority 0
+// (the base wave, alongside carvel/argoevents/tekton/etc) and sort
+// alphabetically within their tier.
+var dirPriority = map[string]int{
+	"shipwright":         1,
+	"cluster_strategies": 2,
+}
+
 // manifestPaths walks the embedded dependencies tree and returns every
-// manifest, sorted for a stable apply order. The embed is the single
-// source of truth — no hand-maintained path lists to drift.
+// manifest, ordered by dirPriority tier (then alphabetically within a
+// tier) for a stable, dependency-respecting apply order. The embed is
+// the single source of truth — no hand-maintained path lists to drift.
 func manifestPaths() ([]string, error) {
 	var paths []string
 	err := fs.WalkDir(Assets, "dependencies", func(path string, d fs.DirEntry, err error) error {
@@ -32,6 +47,10 @@ func manifestPaths() ([]string, error) {
 			return err
 		}
 		if d.IsDir() {
+			// calico is currently breaking installs — skip until fixed.
+			if d.Name() == "calico" {
+				return fs.SkipDir
+			}
 			return nil
 		}
 		if ext := filepath.Ext(path); ext == ".yaml" || ext == ".yml" {
@@ -39,8 +58,24 @@ func manifestPaths() ([]string, error) {
 		}
 		return nil
 	})
-	sort.Strings(paths)
+	sort.SliceStable(paths, func(i, j int) bool {
+		pi, pj := dirPriority[topDir(paths[i])], dirPriority[topDir(paths[j])]
+		if pi != pj {
+			return pi < pj
+		}
+		return paths[i] < paths[j]
+	})
 	return paths, err
+}
+
+// topDir returns the first path segment under "dependencies/", e.g.
+// "dependencies/cluster_strategies/x.yaml" -> "cluster_strategies".
+func topDir(path string) string {
+	rel := strings.TrimPrefix(path, "dependencies/")
+	if i := strings.Index(rel, "/"); i >= 0 {
+		return rel[:i]
+	}
+	return rel
 }
 
 // InstallAll applies every embedded dependency manifest.
@@ -98,4 +133,3 @@ func ClusterStatus(name string) error {
 	return nil
 }
 
-var _ = strings.TrimSpace // placeholder if unused; remove
