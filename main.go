@@ -41,20 +41,47 @@ func banner() {
 	fmt.Println("──────────────────────────────────────────")
 }
 
+// usageEntry pairs a command invocation with a one-line description of
+// what it does, so `bops` with no args is self-documenting.
+type usageEntry struct {
+	cmd  string
+	desc string
+}
+
+var usageEntries = [][]usageEntry{
+	{
+		{"bops install", "Install the full platform stack (all dependencies)"},
+		{"bops uninstall", "Remove all installed platform components"},
+	},
+	{
+		{"bops dependencies install", "Install only the dependency manifests"},
+		{"bops dependencies uninstall", "Remove only the dependency manifests"},
+	},
+	{
+		{"bops cluster up [name]", "Create the named cluster if it doesn't exist"},
+		{"bops cluster down [name]", "Delete the named cluster"},
+		{"bops cluster status [name]", "Show whether the named cluster is up"},
+	},
+}
+
 func usage() {
+	width := 0
+	for _, group := range usageEntries {
+		for _, e := range group {
+			if len(e.cmd) > width {
+				width = len(e.cmd)
+			}
+		}
+	}
+
 	fmt.Println("Usage:")
 	fmt.Println("")
-	fmt.Println("  bops install")
-	fmt.Println("  bops uninstall")
-	fmt.Println("  bops release apply")
-	fmt.Println("")
-	fmt.Println("  bops dependencies install")
-	fmt.Println("  bops dependencies uninstall")
-	fmt.Println("")
-	fmt.Println("  bops cluster up [name]")
-	fmt.Println("  bops cluster down [name]")
-	fmt.Println("  bops cluster status [name]")
-	fmt.Println("")
+	for _, group := range usageEntries {
+		for _, e := range group {
+			fmt.Printf("  %-*s  %s\n", width, e.cmd, e.desc)
+		}
+		fmt.Println("")
+	}
 }
 
 func main() {
