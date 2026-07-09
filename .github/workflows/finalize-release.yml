@@ -1,3 +1,6 @@
+# Manually-triggered: second step of the release flow. Merges the
+# release/<version> branch into main, tags the release (which triggers
+# release.yml), syncs main back into develop, then deletes the release branch.
 name: Finalize Release
 on:
   workflow_dispatch:
@@ -11,6 +14,8 @@ jobs:
   finalize:
     runs-on: ubuntu-latest
     steps:
+      # GH_PAT (not the default GITHUB_TOKEN) is required — pushing the tag
+      # below must trigger release.yml, which GitHub's default token can't do.
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -30,6 +35,7 @@ jobs:
             -m "release: merge release/${{ github.event.inputs.version }} into main"
           git push origin main
 
+      # Pushing this tag is what kicks off release.yml (build, sign, publish).
       - name: Tag release
         run: |
           git tag ${{ github.event.inputs.version }}
@@ -46,18 +52,18 @@ jobs:
       - name: Delete release branch
         run: |
           git push origin --delete release/${{ github.event.inputs.version }}
+
       - name: Release Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<EOF
-          # 🎉 Release Finalized **Version:** \`${{ github.event.inputs.version }}\` 
-          ## Completed 
-          - Merged \`release/${{ github.event.inputs.version }}\` into \`main\` 
-          - Created Git tag \`${{ github.event.inputs.version }}\` 
+          # 🎉 Release Finalized: \`${{ github.event.inputs.version }}\`
+          ## Completed
+          - Merged \`release/${{ github.event.inputs.version }}\` into \`main\`
+          - Created Git tag \`${{ github.event.inputs.version }}\`
           - Synced \`main\` back into \`develop\`
-          - Deleted release branch 
-          ## Branch Flow 
-          -  release/${{ github.event.inputs.version }} ↓ main ↓ develop 
-          ## Release Tag \`${{ github.event.inputs.version }}\` 
+          - Deleted release branch
+          ## Branch Flow
+          - release/${{ github.event.inputs.version }} → main → develop
           ## Next Steps
-          - Pushing the tag triggers the **Release** workflow which generates the changelog and GitHub Release. 
+          - Pushing the tag triggers the **Release** workflow which generates the changelog and GitHub Release.
           EOF
