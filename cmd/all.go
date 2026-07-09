@@ -23,6 +23,10 @@ func manifestPaths() ([]string, error) {
 			return err
 		}
 		if d.IsDir() {
+			// calico is currently breaking installs — skip until fixed.
+			if d.Name() == "calico" {
+				return fs.SkipDir
+			}
 			return nil
 		}
 		if ext := filepath.Ext(path); ext == ".yaml" || ext == ".yml" {
