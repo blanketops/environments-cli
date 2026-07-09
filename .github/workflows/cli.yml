@@ -1,6 +1,11 @@
 # CI build workflow. Runs on every push to develop/main and on PRs targeting
 # develop. Produces short-lived (14-day) build artifacts for review/testing —
 # this is NOT the release pipeline (see release.yml for tagged releases).
+#
+# Both jobs below follow the same shape on purpose: vet/build, sign every
+# binary produced (dynamic build included — it used to be the one binary
+# nothing here ever signed), upload artifact + signature, then a matching
+# step summary. Keep them symmetric when editing either one.
 name: Build BlanketOps Environments CLI
 on:
   push:
@@ -12,8 +17,14 @@ on:
 
 jobs:
   # Dynamic (glibc-linked) build — quick smoke build, uploaded for reference.
+  # Also the only job that runs vet/test, since static-build (needs: build)
+  # would otherwise repeat them for no benefit.
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write    # Required for OIDC (Sigstore/Cosign)
+      attestations: write # Required for GitHub Actions Attestations
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -27,21 +38,68 @@ jobs:
       - name: Install mage
         run: go install github.com/magefile/mage@latest
 
+      - name: Vet
+        run: mage vet
+
+      - name: Test
+        run: mage test
+
       - name: Build CLI (Dynamic)
         run: mage build
 
       - name: Smoke test
         run: ./bin/bops || true   # banner+usage exits 1 by design; proves it executes
 
+      - name: Install Cosign
+        run: go install github.com/sigstore/cosign/v2/cmd/cosign@latest
+
+      - name: Sign binary
+        run: cosign sign-blob --yes --output-signature bin/bops.sig bin/bops
+
+      - name: Generate Attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: bin/bops
+
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
         with:
           name: bops-dynamic
-          path: bin/bops
+          path: |
+            bin/bops
+            bin/bops.sig
           retention-days: 14
 
-  # Static (AMD64 & ARM64) build — the binaries that matter for distribution,
-  # so they're signed and attested the same way release.yml does for tags.
+      - name: Build Summary
+        if: always()
+        run: |
+          {
+            echo "## 🛠 BlanketOps Environments CLI — Dynamic Build"
+            echo ""
+            echo "| Item | Value |"
+            echo "| --- | --- |"
+            echo "| Ref | \`${GITHUB_REF_NAME}\` |"
+            echo "| Commit | \`${GITHUB_SHA::12}\` |"
+            echo "| Trigger | ${GITHUB_EVENT_NAME} |"
+            echo "| Go | \`$(grep '^go ' go.mod | awk '{print $2}')\` |"
+            echo "| Job status | **${{ job.status }}** |"
+            echo ""
+            echo "### Binary"
+            echo ""
+            echo "| Binary | Size |"
+            echo "| --- | --- |"
+            if [ -f bin/bops ]; then
+              echo "| \`bops\` | $(du -h bin/bops | cut -f1) |"
+            else
+              echo "| \`bops\` | ⚠️ not produced |"
+            fi
+            echo ""
+            echo "### Security"
+            echo "- **Cosign Signature:** Created \`bops.sig\`."
+            echo "- **Provenance:** Attestation generated and linked to GitHub."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Static (AMD64 & ARM64) build — the binaries that matter for distribution.
   static-build:
     runs-on: ubuntu-latest
     needs: build
@@ -70,13 +128,11 @@ jobs:
       - name: Install Cosign
         run: go install github.com/sigstore/cosign/v2/cmd/cosign@latest
 
-      # 1. Sign binaries with Cosign (Keyless)
       - name: Sign binaries
         run: |
           cosign sign-blob --yes --output-signature bin/bops-static.sig bin/bops-static
           cosign sign-blob --yes --output-signature bin/bops-static-arm64.sig bin/bops-static-arm64
 
-      # 2. Attest build provenance
       - name: Generate Attestations
         uses: actions/attest-build-provenance@v2
         with:
@@ -91,11 +147,11 @@ jobs:
           path: bin/bops-static*
           retention-days: 14
 
-      - name: CLI Summary
+      - name: Static Build Summary
         if: always()
         run: |
           {
-            echo "## 🛠 BlanketOps Environments CLI — Build"
+            echo "## 🛠 BlanketOps Environments CLI — Static Build"
             echo ""
             echo "| Item | Value |"
             echo "| --- | --- |"
@@ -118,7 +174,7 @@ jobs:
             done
             echo ""
             echo "### Security"
-            echo "- **Cosign Signatures:** Created \`.sig\` files for static binaries."
+            echo "- **Cosign Signatures:** Created \`.sig\` files for both static binaries."
             echo "- **Provenance:** Attestations generated and linked to GitHub."
             echo ""
             echo "Embedded assets: $(find dependencies -name '*.yaml' -o -name '*.yml' 2>/dev/null | wc -l) manifests, $(find scripts -type f 2>/dev/null | wc -l) scripts"
