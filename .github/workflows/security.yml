@@ -1,0 +1,146 @@
+# Security scanning. Runs static analysis (CodeQL) and known-vulnerability
+# scanning (govulncheck) against the Go source and its dependency graph.
+# Triggers on push/PR like cli.yml, plus a weekly schedule so newly
+# disclosed CVEs are caught even when nothing in the repo has changed.
+name: Security
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches: [develop]
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------
+  # CODEQL — source-level static analysis (SQL/command injection, unsafe
+  # deserialization, etc). Findings are uploaded to the repo's Security
+  # tab automatically by codeql-action/analyze, not printed here.
+  # ---------------------------------------------------------------------
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 1. Prepare the CodeQL database for Go.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: go
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # 2. CodeQL observes this build to trace the Go call graph.
+      - name: Build
+        run: go build ./...
+
+      # 3. Analyze and upload findings to the Security tab.
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+
+  # ---------------------------------------------------------------------
+  # GOVULNCHECK — cross-references go.sum and the code paths that actually
+  # reach each dependency against Go's official vulnerability database.
+  # Far less noisy than a generic SCA scan since it only flags CVEs in
+  # code paths we actually call.
+  #
+  # JSON output always exits 0 by design (govulncheck's own convention —
+  # callers are expected to parse the payload, not rely on exit code), so
+  # pass/fail here is derived from counting "finding" entries in the JSON,
+  # not from a shell exit code. An earlier version of this job piped
+  # text-mode output through `tee` and checked $?, which silently always
+  # reported success because GitHub Actions doesn't set `pipefail` by
+  # default — the last command in a pipe (tee) always succeeds.
+  # ---------------------------------------------------------------------
+  govulncheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Required to upload SARIF findings
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      # Redirection (not a pipe) — the exit code we care about here is
+      # jq's below, computed from the JSON content, so this is allowed
+      # to "fail" without continue-on-error tricks.
+      - name: Run govulncheck (JSON)
+        run: govulncheck -format json ./... > govulncheck.json || true
+
+      # SARIF for the Security tab — same scan, different output format.
+      - name: Run govulncheck (SARIF)
+        run: govulncheck -format sarif ./... > govulncheck.raw.sarif || true
+
+      # govulncheck (as of v1.6.0) sometimes emits duplicate entries in a
+      # rule's properties.tags array, which fails GitHub's strict SARIF
+      # schema validation on upload. Dedupe before uploading rather than
+      # patching govulncheck itself.
+      - name: Sanitize SARIF
+        run: |
+          jq 'walk(if type == "object" and has("tags") and (.tags | type) == "array"
+                   then .tags |= unique else . end)' \
+            govulncheck.raw.sarif > govulncheck.sarif
+
+      - name: Upload SARIF to Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: govulncheck.sarif
+          category: govulncheck
+
+      # Build a proper markdown table (advisory, package, fixed version,
+      # number of reachable call paths) instead of dumping raw CLI text.
+      - name: Tabulate results
+        id: tabulate
+        run: |
+          count=$(jq -s '[.[] | select(.finding != null) | .finding.osv] | unique | length' govulncheck.json)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## 🛡️ govulncheck"
+            echo ""
+            if [ "$count" -eq 0 ]; then
+              echo "**Status:** ✅ No known vulnerabilities in reachable code paths."
+            else
+              echo "**Status:** ⚠️ $count advisories affect reachable code paths."
+              echo ""
+              echo "| Advisory | Package | Fixed in | Call paths |"
+              echo "| --- | --- | --- | --- |"
+              jq -s -r '
+                [ .[] | select(.finding != null) | .finding ]
+                | group_by(.osv)
+                | map(.[0] + {count: length})
+                | sort_by(.osv)
+                | .[]
+                | "| [\(.osv)](https://pkg.go.dev/vuln/\(.osv)) | \(.trace[0].package // .trace[0].module // "stdlib") | \(.fixed_version) | \(.count) |"
+              ' govulncheck.json
+              echo ""
+              echo "Full findings, including call traces: **Security → Code scanning alerts**."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail on findings
+        if: steps.tabulate.outputs.count != '0'
+        run: exit 1
