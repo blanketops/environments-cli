@@ -1,0 +1,113 @@
+# Security scanning. Runs static analysis (CodeQL) and known-vulnerability
+# scanning (govulncheck) against the Go source and its dependency graph.
+# Triggers on push/PR like cli.yml, plus a weekly schedule so newly
+# disclosed CVEs are caught even when nothing in the repo has changed.
+name: Security
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches: [develop]
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------
+  # CODEQL — source-level static analysis (SQL/command injection, unsafe
+  # deserialization, etc). Findings are uploaded to the repo's Security
+  # tab automatically by codeql-action/analyze, not printed here.
+  # ---------------------------------------------------------------------
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 1. Prepare the CodeQL database for Go.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: go
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # 2. CodeQL observes this build to trace the Go call graph.
+      - name: Build
+        run: go build ./...
+
+      # 3. Analyze and upload findings to the Security tab.
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: CodeQL Summary
+        if: always()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## 🔎 CodeQL Analysis
+          Static analysis complete for Go. Any findings are listed under
+          the repo's **Security → Code scanning alerts** tab, not here.
+          EOF
+
+  # ---------------------------------------------------------------------
+  # GOVULNCHECK — cross-references go.sum and the code paths that actually
+  # reach each dependency against Go's official vulnerability database.
+  # Far less noisy than a generic SCA scan since it only flags CVEs in
+  # code paths we actually call.
+  # ---------------------------------------------------------------------
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      # Capture output to a file so the summary step below can render it
+      # even if this step fails (govulncheck exits non-zero on findings).
+      - name: Run govulncheck
+        id: govulncheck
+        run: govulncheck ./... | tee govulncheck.out
+        continue-on-error: true
+
+      - name: Govulncheck Summary
+        if: always()
+        run: |
+          {
+            echo "## 🛡️ govulncheck"
+            echo ""
+            if [ "${{ steps.govulncheck.outcome }}" = "success" ]; then
+              echo "**Status:** ✅ No known vulnerabilities in reachable code paths."
+            else
+              echo "**Status:** ⚠️ Findings reported — see log below."
+            fi
+            echo ""
+            echo '```'
+            cat govulncheck.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Fail the job after the summary is posted, so findings are always
+      # visible in the run summary even when the job goes red.
+      - name: Fail on findings
+        if: steps.govulncheck.outcome != 'success'
+        run: exit 1
