@@ -23,6 +23,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/BlanketOps/environments-cli/util"
 )
 
 // ---------------------------------------------------------------------------
@@ -40,20 +42,25 @@ func UninstallManifests(manifestPaths []string) error {
 	}
 
 	for _, path := range manifestPaths {
-		fmt.Printf("❌ Removing %s\n", path)
+		p := util.NewSpinner(path)
 
 		data, err := os.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("read manifest %s: %w", path, err)
+			err = fmt.Errorf("read manifest %s: %w", path, err)
+			p.Fail(err)
+			return err
 		}
 
 		objs, err := decodeYAMLStream(bytes.NewReader(data))
 		if err != nil {
-			return fmt.Errorf("decode %s: %w", path, err)
+			err = fmt.Errorf("decode %s: %w", path, err)
+			p.Fail(err)
+			return err
 		}
 
 		for _, o := range objs {
 			gvk := o.GroupVersionKind()
+			p.Update(fmt.Sprintf("%s %s", gvk.Kind, o.GetName()))
 
 			mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 			if err != nil {
@@ -73,6 +80,7 @@ func UninstallManifests(manifestPaths []string) error {
 
 			_ = ri.Delete(context.Background(), o.GetName(), metav1.DeleteOptions{})
 		}
+		p.Done("")
 	}
 
 	return nil

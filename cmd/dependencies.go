@@ -25,6 +25,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/BlanketOps/environments-cli/util"
 )
 
 var Assets embed.FS
@@ -42,18 +44,25 @@ func DependenciesInstall(paths []string) error {
 		return err
 	}
 	for _, path := range paths {
-		fmt.Printf("📄 Applying %s\n", path)
+		p := util.NewSpinner(path)
 		data, err := Assets.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("read manifest %s: %w", path, err)
+			err = fmt.Errorf("read manifest %s: %w", path, err)
+			p.Fail(err)
+			return err
 		}
 		objs, err := decodeYAMLStream(bytes.NewReader(data))
 		if err != nil {
-			return fmt.Errorf("decode %s: %w", path, err)
+			err = fmt.Errorf("decode %s: %w", path, err)
+			p.Fail(err)
+			return err
 		}
-		if err := robustApply(dc, mapper, objs); err != nil {
-			return fmt.Errorf("apply %s: %w", path, err)
+		if err := robustApply(dc, mapper, objs, p); err != nil {
+			err = fmt.Errorf("apply %s: %w", path, err)
+			p.Fail(err)
+			return err
 		}
+		p.Done("")
 	}
 	return nil
 }
@@ -82,11 +91,16 @@ func ApplyFromURL(url string) error {
 		return err
 	}
 
+	p := util.NewSpinner(url)
 	for _, o := range objs {
+		gvk := o.GetObjectKind().GroupVersionKind()
+		p.Update(fmt.Sprintf("%s %s", gvk.Kind, o.GetName()))
 		if err := applyUnstructured(dc, mapper, o); err != nil {
+			p.Fail(err)
 			return err
 		}
 	}
+	p.Done("")
 	return nil
 }
 
@@ -113,17 +127,22 @@ func ApplyEmbeddedDir(path string) error {
 			continue
 		}
 		file := filepath.Join(path, e.Name())
+		p := util.NewSpinner(file)
 		data, err := Assets.ReadFile(file)
 		if err != nil {
+			p.Fail(err)
 			return err
 		}
 		objs, err := decodeYAMLStream(bytes.NewReader(data))
 		if err != nil {
+			p.Fail(err)
 			return err
 		}
-		if err := robustApply(dc, mapper, objs); err != nil {
+		if err := robustApply(dc, mapper, objs, p); err != nil {
+			p.Fail(err)
 			return err
 		}
+		p.Done("")
 	}
 	return nil
 }

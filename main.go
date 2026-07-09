@@ -18,11 +18,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ntlaletsi70/blanketops-environments-cli/cmd"
+	"github.com/BlanketOps/environments-cli/cmd"
 )
 
 // uninstallPaths is the manifest set removed on uninstall, in reverse
 // dependency order. Must stay in sync with the embedded dependencies tree.
+// crossplane/provider.yaml is intentionally absent — manifestPaths() skips
+// the crossplane directory on install (see cmd/all.go), so there's nothing
+// to remove.
 var uninstallPaths = []string{
 	"dependencies/carvel/release.yaml",
 	"dependencies/argoevents/manifest.yaml",
@@ -33,7 +36,6 @@ var uninstallPaths = []string{
 	"dependencies/cluster_strategies/buildpacks_v3.yaml",
 	"dependencies/cluster_strategies/kaniko.yaml",
 	"dependencies/cluster_strategies/buildah_shipwright_managed_push_cr.yaml",
-	"dependencies/crossplane/provider.yaml",
 }
 
 func banner() {
@@ -41,20 +43,48 @@ func banner() {
 	fmt.Println("──────────────────────────────────────────")
 }
 
+// usageEntry pairs a command invocation with a one-line description of
+// what it does, so `bops` with no args is self-documenting.
+type usageEntry struct {
+	cmd  string
+	desc string
+}
+
+var usageEntries = [][]usageEntry{
+	{
+		{"bops install", "Fetch and install the latest bops release (reserved, not yet implemented)"},
+		{"bops uninstall", "Remove a self-installed bops release (reserved, not yet implemented)"},
+		{"bops dist", "Reserved (not yet implemented)"},
+	},
+	{
+		{"bops dependencies install", "Install the platform stack (all dependency manifests)"},
+		{"bops dependencies uninstall", "Remove the platform stack"},
+	},
+	{
+		{"bops cluster up [name]", "Create the named cluster if it doesn't exist"},
+		{"bops cluster down [name]", "Delete the named cluster"},
+		{"bops cluster status [name]", "Show whether the named cluster is up"},
+	},
+}
+
 func usage() {
+	width := 0
+	for _, group := range usageEntries {
+		for _, e := range group {
+			if len(e.cmd) > width {
+				width = len(e.cmd)
+			}
+		}
+	}
+
 	fmt.Println("Usage:")
 	fmt.Println("")
-	fmt.Println("  bops install")
-	fmt.Println("  bops uninstall")
-	fmt.Println("  bops release apply")
-	fmt.Println("")
-	fmt.Println("  bops dependencies install")
-	fmt.Println("  bops dependencies uninstall")
-	fmt.Println("")
-	fmt.Println("  bops cluster up [name]")
-	fmt.Println("  bops cluster down [name]")
-	fmt.Println("  bops cluster status [name]")
-	fmt.Println("")
+	for _, group := range usageEntries {
+		for _, e := range group {
+			fmt.Printf("  %-*s  %s\n", width, e.cmd, e.desc)
+		}
+		fmt.Println("")
+	}
 }
 
 func main() {
@@ -69,23 +99,26 @@ func main() {
 	}
 	switch os.Args[1] {
 	// ---------------------------------------------------------------------
-	// INSTALL / UNINSTALL
+	// INSTALL / UNINSTALL — reserved for self-install: fetching and
+	// installing the latest bops release/dist, the same job "dist" was
+	// already reserved for. Not implemented yet. The platform stack
+	// (the embedded dependencies/ tree) installs via `dependencies
+	// install`/`dependencies uninstall` below.
 	// ---------------------------------------------------------------------
 	case "install":
-		if err := cmd.InstallAll(); err != nil {
-			fmt.Println("❌", err)
-			os.Exit(1)
-		}
+		fmt.Println("ℹ️ install is reserved for fetching the latest bops release (not yet implemented)")
+		fmt.Println("ℹ️ Use `bops dependencies install` to install the platform stack")
+		return
 	case "uninstall":
-		if err := cmd.UninstallAll(uninstallPaths); err != nil {
-			fmt.Println("❌", err)
-			os.Exit(1)
-		}
+		fmt.Println("ℹ️ uninstall is reserved for removing a self-installed bops release (not yet implemented)")
+		fmt.Println("ℹ️ Use `bops dependencies uninstall` to remove the platform stack")
+		return
 	case "dist":
 		fmt.Println("ℹ️ dist command reserved (no-op for now)")
 		return
 	// ---------------------------------------------------------------------
-	// DEPENDENCIES
+	// DEPENDENCIES — installs/removes the platform stack: every manifest
+	// under the embedded dependencies/ tree.
 	// ---------------------------------------------------------------------
 	case "dependencies":
 		if len(os.Args) < 3 {
