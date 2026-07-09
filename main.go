@@ -22,10 +22,8 @@ import (
 )
 
 // uninstallPaths is the manifest set removed on uninstall, in reverse
-// dependency order. Must stay in sync with the embedded dependencies tree.
-// crossplane/provider.yaml is intentionally absent — manifestPaths() skips
-// the crossplane directory on install (see cmd/all.go), so there's nothing
-// to remove.
+// dependency order. Must stay in sync with InstallAll's explicit sequence
+// in cmd/all.go.
 var uninstallPaths = []string{
 	"dependencies/carvel/release.yaml",
 	"dependencies/argoevents/manifest.yaml",
@@ -36,6 +34,7 @@ var uninstallPaths = []string{
 	"dependencies/cluster_strategies/buildpacks_v3.yaml",
 	"dependencies/cluster_strategies/kaniko.yaml",
 	"dependencies/cluster_strategies/buildah_shipwright_managed_push_cr.yaml",
+	"dependencies/crossplane/provider.yaml",
 }
 
 func banner() {
