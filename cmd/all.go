@@ -51,6 +51,16 @@ func manifestPaths() ([]string, error) {
 			if d.Name() == "calico" {
 				return fs.SkipDir
 			}
+			// crossplane/provider.yaml needs Crossplane's own CRDs, which
+			// only exist once Crossplane core (a Helm install, not an
+			// embedded manifest) is running — that's not wired in yet, and
+			// forcing it as a hard prerequisite blocked every dependency
+			// after it (Flux included) when it was slow or failed. Skip
+			// crossplane here until Helm-installing it has a proper place
+			// in this flow that doesn't gate everything else on it.
+			if d.Name() == "crossplane" {
+				return fs.SkipDir
+			}
 			return nil
 		}
 		if ext := filepath.Ext(path); ext == ".yaml" || ext == ".yml" {
@@ -80,15 +90,6 @@ func topDir(path string) string {
 
 // InstallAll applies every embedded dependency manifest.
 func InstallAll() error {
-	// Crossplane core isn't an embedded manifest — it's installed via Helm
-	// (scripts/install-crossplane.sh) — but dependencies/crossplane/provider.yaml
-	// creates a Provider custom resource that requires Crossplane's own CRDs
-	// to already exist. Without this, the apply times out waiting for a CRD
-	// that will never register on its own.
-	if err := InstallCrossplane(); err != nil {
-		return fmt.Errorf("install crossplane: %w", err)
-	}
-
 	paths, err := manifestPaths()
 	if err != nil {
 		return err
@@ -141,4 +142,3 @@ func ClusterStatus(name string) error {
 	}
 	return nil
 }
-

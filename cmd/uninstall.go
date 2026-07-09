@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/ntlaletsi70/blanketops-environments-cli/util"
+	"github.com/BlanketOps/environments-cli/util"
 )
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-module github.com/ntlaletsi70/blanketops-environments-cli
+module github.com/BlanketOps/environments-cli
 
 go 1.24.0
 

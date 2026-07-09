@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/ntlaletsi70/blanketops-environments-cli/util"
+	"github.com/BlanketOps/environments-cli/util"
 )
 
 // ApplyRawYAML applies raw YAML text using robustApply
