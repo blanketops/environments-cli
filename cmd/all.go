@@ -45,6 +45,15 @@ func manifestPaths() ([]string, error) {
 
 // InstallAll applies every embedded dependency manifest.
 func InstallAll() error {
+	// Crossplane core isn't an embedded manifest — it's installed via Helm
+	// (scripts/install-crossplane.sh) — but dependencies/crossplane/provider.yaml
+	// creates a Provider custom resource that requires Crossplane's own CRDs
+	// to already exist. Without this, the apply times out waiting for a CRD
+	// that will never register on its own.
+	if err := InstallCrossplane(); err != nil {
+		return fmt.Errorf("install crossplane: %w", err)
+	}
+
 	paths, err := manifestPaths()
 	if err != nil {
 		return err
