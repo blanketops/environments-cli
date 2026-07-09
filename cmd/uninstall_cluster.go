@@ -29,14 +29,12 @@ func RunUninstallScripts() error {
 	_ = exec.Command("helm", "uninstall", "external-secrets", "-n", "external-secrets").Run()
 	_ = exec.Command("helm", "uninstall", "flux", "-n", "flux-system").Run()
 
-	if err := run("scripts/silence-all-finalizers.sh"); err != nil {
-		return err
-	}
-
-	_ = run("scripts/install-crossplane.sh", "--uninstall")
-	_ = run("scripts/install-externalsecrets.sh", "--uninstall")
-
-	return nil
+	// install-crossplane.sh / install-externalsecrets.sh have no --uninstall
+	// handling at all — they unconditionally `helm upgrade --install`, so
+	// calling them here would silently reinstall what the helm uninstall
+	// calls above just removed. The helm uninstall calls are the actual
+	// removal; don't call these install scripts on the way out.
+	return runScript("scripts/silence-all-finalizers.sh")
 }
 
 // ---------------------------------------------------------------------------
@@ -52,13 +50,6 @@ func UninstallClusterResources() error {
 	}
 
 	return deleteNamespaces()
-}
-
-func run(script string, args ...string) error {
-	cmd := exec.Command("bash", append([]string{script}, args...)...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
 
 func deleteRBAC() error {
@@ -136,16 +127,6 @@ echo "✅ All CRDs deleted"
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
-
-// func runScript(script string, args ...string) error {
-// 	fmt.Printf("⚙️  Running %s %v\n", script, args)
-
-// 	cmd := exec.Command("bash", append([]string{script}, args...)...)
-// 	cmd.Stdout = os.Stdout
-// 	cmd.Stderr = os.Stderr
-
-// 	return cmd.Run()
-// }
 
 func deleteNamespaces() error {
 	fmt.Println("🧹 Removing system namespaces")

@@ -16,102 +16,100 @@ package cmd
 
 import (
 	"fmt"
-	"io/fs"
-	"path/filepath"
-	"sort"
-	"strings"
 )
 
-// dirPriority orders manifest application when directories have a real
-// dependency relationship that alphabetical order can't express — e.g.
-// cluster_strategies/buildah_shipwright_managed_push_cr.yaml creates a
-// ClusterBuildStrategy, a CRD that shipwright/shipwright_build.yaml is
-// the one that installs. Applying alphabetically put "cluster_strategies"
-// before "shipwright" and the apply timed out waiting on a CRD that
-// didn't exist yet. Directories not listed here default to priority 0
-// (the base wave, alongside carvel/argoevents/tekton/etc) and sort
-// alphabetically within their tier.
-var dirPriority = map[string]int{
-	"shipwright":         1,
-	"cluster_strategies": 2,
-}
-
-// manifestPaths walks the embedded dependencies tree and returns every
-// manifest, ordered by dirPriority tier (then alphabetically within a
-// tier) for a stable, dependency-respecting apply order. The embed is
-// the single source of truth — no hand-maintained path lists to drift.
-func manifestPaths() ([]string, error) {
-	var paths []string
-	err := fs.WalkDir(Assets, "dependencies", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			// calico is currently breaking installs — skip until fixed.
-			if d.Name() == "calico" {
-				return fs.SkipDir
-			}
-			// crossplane/provider.yaml needs Crossplane's own CRDs, which
-			// only exist once Crossplane core (a Helm install, not an
-			// embedded manifest) is running — that's not wired in yet, and
-			// forcing it as a hard prerequisite blocked every dependency
-			// after it (Flux included) when it was slow or failed. Skip
-			// crossplane here until Helm-installing it has a proper place
-			// in this flow that doesn't gate everything else on it.
-			if d.Name() == "crossplane" {
-				return fs.SkipDir
-			}
-			return nil
-		}
-		if ext := filepath.Ext(path); ext == ".yaml" || ext == ".yml" {
-			paths = append(paths, path)
-		}
-		return nil
-	})
-	sort.SliceStable(paths, func(i, j int) bool {
-		pi, pj := dirPriority[topDir(paths[i])], dirPriority[topDir(paths[j])]
-		if pi != pj {
-			return pi < pj
-		}
-		return paths[i] < paths[j]
-	})
-	return paths, err
-}
-
-// topDir returns the first path segment under "dependencies/", e.g.
-// "dependencies/cluster_strategies/x.yaml" -> "cluster_strategies".
-func topDir(path string) string {
-	rel := strings.TrimPrefix(path, "dependencies/")
-	if i := strings.Index(rel, "/"); i >= 0 {
-		return rel[:i]
-	}
-	return rel
-}
-
-// InstallAll applies every embedded dependency manifest.
+// InstallAll installs the platform stack in an explicit, dependency-aware
+// order. This used to be a generic walk over the embedded dependencies/
+// tree, sorted alphabetically (with a couple of directory-priority hacks
+// bolted on). That model was the root cause of a whole session's worth of
+// ordering bugs: it has no way to express that Crossplane's provider.yaml
+// needs Crossplane core (a Helm install, not an embedded manifest)
+// running first, that cluster_strategies needs Shipwright's CRDs, or that
+// Flux's manifest needs Flux's CRDs fetched first. This restores the
+// original, explicit step-by-step sequence — each dependency knows what
+// it needs before it, because it's written down, not inferred from
+// directory names.
+//
+// calico and multus are intentionally absent: calico is currently
+// breaking installs, and dependencies/multus/multus.yaml is (and always
+// has been) an empty stub with nothing to apply.
 func InstallAll() error {
-	paths, err := manifestPaths()
-	if err != nil {
+	fmt.Println("📦 Installing Carvel Kapp...")
+	if err := DependenciesInstall([]string{"dependencies/carvel/release.yaml"}); err != nil {
 		return err
 	}
-	return DependenciesInstall(paths)
+
+	fmt.Println("📦 Installing Argo Events...")
+	if err := DependenciesInstall([]string{"dependencies/argoevents/manifest.yaml"}); err != nil {
+		return err
+	}
+
+	fmt.Println("📦 Installing Tekton Pipelines...")
+	if err := DependenciesInstall([]string{"dependencies/tekton/tekton_pipelines.yaml"}); err != nil {
+		return err
+	}
+
+	fmt.Println("📦 Installing Tekton Dashboard...")
+	if err := DependenciesInstall([]string{"dependencies/tekton/tekton_dashboard.yaml"}); err != nil {
+		return err
+	}
+
+	fmt.Println("📦 Installing Shipwright Build...")
+	if err := DependenciesInstall([]string{"dependencies/shipwright/shipwright_build.yaml"}); err != nil {
+		return err
+	}
+
+	if err := InstallCrossplane(); err != nil {
+		return fmt.Errorf("crossplane setup failed: %w", err)
+	}
+
+	if err := InstallExternalSecrets(); err != nil {
+		return fmt.Errorf("externalsecrets setup failed: %w", err)
+	}
+
+	// Needs Shipwright's CRDs (installed above) to already exist.
+	fmt.Println("📦 Installing Build Strategies...")
+	if err := DependenciesInstall([]string{
+		"dependencies/cluster_strategies/buildpacks_v3.yaml",
+		"dependencies/cluster_strategies/kaniko.yaml",
+		"dependencies/cluster_strategies/buildah_shipwright_managed_push_cr.yaml",
+	}); err != nil {
+		return err
+	}
+
+	// Fetches Flux's CRDs before the Flux manifest below needs them.
+	if err := InstallFluxCRDs(); err != nil {
+		return err
+	}
+
+	fmt.Println("📦 Installing Flux UI + Config...")
+	if err := DependenciesInstall([]string{"dependencies/flux/fluxcdui.yaml"}); err != nil {
+		return err
+	}
+
+	// Needs Crossplane core (installed above via InstallCrossplane) to
+	// already be running — its CRD is what this Provider resource uses.
+	fmt.Println("📦 Installing Crossplane Github Upjet Provider...")
+	if err := DependenciesInstall([]string{"dependencies/crossplane/provider.yaml"}); err != nil {
+		return err
+	}
+
+	fmt.Println("🎉 BlanketOps environment installed successfully!")
+	return nil
 }
 
-// UninstallAll removes the given manifests, or — when called with nil —
-// every embedded dependency manifest in reverse apply order.
+// UninstallAll tears down the platform stack in the mirror order of
+// InstallAll: Helm/script-installed pieces first (RunUninstallScripts),
+// then the plain embedded manifests (UninstallManifests), then whatever
+// cluster-wide RBAC/CRDs/namespaces are left over (UninstallClusterResources).
 func UninstallAll(paths []string) error {
-	if paths == nil {
-		all, err := manifestPaths()
-		if err != nil {
-			return err
-		}
-		// reverse: tear down in the opposite order of install
-		for i, j := 0, len(all)-1; i < j; i, j = i+1, j-1 {
-			all[i], all[j] = all[j], all[i]
-		}
-		paths = all
+	if err := RunUninstallScripts(); err != nil {
+		return fmt.Errorf("uninstall scripts: %w", err)
 	}
-	return UninstallManifests(paths)
+	if err := UninstallManifests(paths); err != nil {
+		return err
+	}
+	return UninstallClusterResources()
 }
 
 // ── Cluster facade ───────────────────────────────────────────────────────
