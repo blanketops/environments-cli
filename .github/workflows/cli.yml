@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -29,7 +29,7 @@ jobs:
         run: ./bin/bops || true   # banner+usage exits 1 by design; proves it executes
 
       - name: Upload CLI Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bops
           path: bin/bops
@@ -40,7 +40,7 @@ jobs:
     needs: build
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -57,7 +57,7 @@ jobs:
           mage staticarm64
 
       - name: Upload Static Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bops-static
           path: bin/bops-static*
