@@ -83,9 +83,13 @@ type usageEntry struct {
 
 var usageEntries = [][]usageEntry{
 	{
-		{"bops-env install", "Fetch and install the latest bops-env release and operator"},
-		{"bops-env uninstall", "Remove a self-installed bops-env release and the operator"},
+		{"bops-env install", "Install the BlanketOps Environments operator"},
+		{"bops-env uninstall", "Remove the BlanketOps Environments operator"},
 		{"bops-env dist", "Reserved (not yet implemented)"},
+	},
+	{
+		{"bops-env self install", "Fetch and install the latest bops-env CLI binary"},
+		{"bops-env self uninstall", "Remove a self-installed bops-env CLI binary"},
 	},
 	{
 		{"bops-env dependencies install", "Install the platform stack (all dependency manifests)"},
@@ -130,17 +134,12 @@ func main() {
 	}
 	switch os.Args[1] {
 	// ---------------------------------------------------------------------
-	// INSTALL / UNINSTALL — self-install: fetches and installs the latest
-	// bops-env release from GitHub. The platform stack (the embedded
-	// dependencies/ tree) installs via `dependencies install`/
-	// `dependencies uninstall` below — that's a separate concern from
-	// installing the CLI binary itself.
+	// INSTALL / UNINSTALL — applies/removes the BlanketOps Environments
+	// operator (CRDs, RBAC, controller-manager Deployment) published by
+	// the environments-install repo. Upgrading the CLI binary itself is
+	// not part of this — see the README's Installation section.
 	// ---------------------------------------------------------------------
 	case "install":
-		if err := cmd.SelfInstall(); err != nil {
-			fmt.Println("❌", err)
-			os.Exit(1)
-		}
 		if err := cmd.InstallOperator(); err != nil {
 			fmt.Println("❌", err)
 			os.Exit(1)
@@ -150,13 +149,35 @@ func main() {
 			fmt.Println("❌", err)
 			os.Exit(1)
 		}
-		if err := cmd.SelfUninstall(); err != nil {
-			fmt.Println("❌", err)
-			os.Exit(1)
-		}
 	case "dist":
 		fmt.Println("ℹ️ dist command reserved (no-op for now)")
 		return
+	// ---------------------------------------------------------------------
+	// SELF — fetches and installs/removes the bops-env CLI binary itself
+	// from its own GitHub releases. Separate from INSTALL/UNINSTALL above,
+	// which only ever touch the operator running on the cluster.
+	// ---------------------------------------------------------------------
+	case "self":
+		if len(os.Args) < 3 {
+			usage()
+			os.Exit(1)
+		}
+		switch os.Args[2] {
+		case "install":
+			if err := cmd.SelfInstall(); err != nil {
+				fmt.Println("❌", err)
+				os.Exit(1)
+			}
+		case "uninstall":
+			if err := cmd.SelfUninstall(); err != nil {
+				fmt.Println("❌", err)
+				os.Exit(1)
+			}
+		default:
+			fmt.Println("Unknown self command:", os.Args[2])
+			usage()
+			os.Exit(1)
+		}
 	// ---------------------------------------------------------------------
 	// DEPENDENCIES — installs/removes the platform stack: every manifest
 	// under the embedded dependencies/ tree.

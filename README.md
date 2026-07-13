@@ -8,6 +8,38 @@ The binary embeds all manifests and bootstrap scripts, making it ideal for minim
 
 ---
 
+## 📥 Installation
+
+### Download a prebuilt binary
+
+Grab the latest signed release from the [Releases page](https://github.com/blanketops/environments-cli/releases/latest):
+
+```bash
+# Linux amd64
+curl -LO https://github.com/blanketops/environments-cli/releases/latest/download/bops-env-static
+chmod +x bops-env-static
+sudo mv bops-env-static /usr/local/bin/bops-env
+
+# Linux arm64
+curl -LO https://github.com/blanketops/environments-cli/releases/latest/download/bops-env-static-arm64
+chmod +x bops-env-static-arm64
+sudo mv bops-env-static-arm64 /usr/local/bin/bops-env
+```
+
+See [Provenance, Signing & Security](#-provenance-signing--security) below to verify the download before running it.
+
+### Build and install locally
+
+```bash
+git clone https://github.com/blanketops/environments-cli.git
+cd environments-cli
+mage install   # builds and installs to ~/.local/bin (falls back to ~/bin if noexec)
+```
+
+Either way, once `bops-env` is on your PATH, `bops-env self install` re-fetches and replaces the CLI binary itself, kept separate from `bops-env install`, which only ever manages the operator on your cluster.
+
+---
+
 ## 🔐 Provenance, Signing & Security
 
 We take supply chain security seriously. Every release is signed and attested to ensure artifact integrity from build to deployment.
@@ -24,6 +56,14 @@ cosign verify-blob --certificate-identity-regexp ".*" --signature bin/bops-env-s
 # Verify the attestation via GitHub CLI
 gh attest verify bin/bops-env-static --owner <your-org-or-username>
 ```
+
+---
+
+## 🧩 The Operator
+
+`bops-env install` installs the BlanketOps Environments operator — the CRDs, RBAC, and controller-manager Deployment that reconcile the platform's custom resources.
+
+That bundle isn't built here: it's published by [blanketops/environments-install](https://github.com/blanketops/environments-install), an install-only repo that owns CRDs, RBAC, and manager manifests as kustomize overlays. Its `make build-installer` target renders `config/default` into a single `dist/install.yaml`, published as the `install.yaml` asset on every tagged release. `bops-env install`/`uninstall` apply/delete that same asset from `https://github.com/blanketops/environments-install/releases/latest/download/install.yaml`.
 
 ---
 
@@ -85,13 +125,17 @@ scripts/          # Shell-based configuration logic
 ## 🚀 Usage
 
 ```bash
-# Install the entire platform stack
+# Install the BlanketOps Environments operator
 bops-env install
 
-# Uninstall everything
+# Uninstall the operator
 bops-env uninstall
 
-# Install only dependencies
+# Update the bops-env CLI binary itself
+bops-env self install
+bops-env self uninstall
+
+# Install the platform stack (dependency manifests)
 bops-env dependencies install
 
 # Cluster management
@@ -122,8 +166,9 @@ gok build
 # Create a test cluster
 kind create cluster
 
-# Install the stack
+# Install the operator, then the platform stack
 bops-env install
+bops-env dependencies install
 
 # Verify components
 kubectl get pods -A
@@ -135,7 +180,7 @@ kubectl get pods -A
 
 ```mermaid
 flowchart TD
-    Start[bops-env install] --> Carvel
+    Start[bops-env dependencies install] --> Carvel
     Carvel --> ArgoEvents
     ArgoEvents --> Tekton
     Tekton --> Dashboard

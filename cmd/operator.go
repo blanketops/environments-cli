@@ -35,10 +35,9 @@ import (
 const operatorInstallerURL = "https://github.com/blanketops/environments-install/releases/latest/download/install.yaml"
 
 // InstallOperator applies the latest published operator bundle (CRDs,
-// RBAC, controller-manager Deployment) to the current kube context. It's
-// the runtime counterpart to SelfInstall, which only fetches this CLI's
-// own binary — the CLI and the operator it drives are versioned and
-// released independently.
+// RBAC, controller-manager Deployment) to the current kube context. The
+// CLI and the operator it drives are versioned and released independently
+// — this doesn't touch the bops-env binary itself.
 func InstallOperator() error {
 	fmt.Println("📦 Installing BlanketOps Environments operator...")
 	return ApplyFromURL(operatorInstallerURL)
