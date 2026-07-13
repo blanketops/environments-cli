@@ -26,7 +26,7 @@ cosign verify-blob --certificate-identity-regexp ".*" \
   --signature bin/bops-env-static.sig bin/bops-env-static
 
 # Verify the GitHub build-provenance attestation
-gh attest verify bin/bops-env-static --owner BlanketOps
+gh attest verify bin/bops-env-static --owner blanketops
 ```
 
 ## Reporting a Vulnerability
@@ -34,7 +34,7 @@ gh attest verify bin/bops-env-static --owner BlanketOps
 Please report security vulnerabilities privately — **do not open a public
 GitHub issue**.
 
-Use [GitHub's private vulnerability reporting](https://github.com/BlanketOps/environments-cli/security/advisories/new)
+Use [GitHub's private vulnerability reporting](https://github.com/blanketops/environments-cli/security/advisories/new)
 for this repository. If that's unavailable, contact a maintainer directly
 through GitHub.
 
