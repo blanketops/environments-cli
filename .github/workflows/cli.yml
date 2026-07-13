@@ -48,26 +48,26 @@ jobs:
         run: mage build
 
       - name: Smoke test
-        run: ./bin/bops || true   # banner+usage exits 1 by design; proves it executes
+        run: ./bin/bops-env || true   # banner+usage exits 1 by design; proves it executes
 
       - name: Install Cosign
         run: go install github.com/sigstore/cosign/v2/cmd/cosign@latest
 
       - name: Sign binary
-        run: cosign sign-blob --yes --output-signature bin/bops.sig bin/bops
+        run: cosign sign-blob --yes --output-signature bin/bops-env.sig bin/bops-env
 
       - name: Generate Attestation
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: bin/bops
+          subject-path: bin/bops-env
 
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bops-dynamic
+          name: bops-env-dynamic
           path: |
-            bin/bops
-            bin/bops.sig
+            bin/bops-env
+            bin/bops-env.sig
           retention-days: 14
 
       - name: Build Summary
@@ -88,14 +88,14 @@ jobs:
             echo ""
             echo "| Binary | Size |"
             echo "| --- | --- |"
-            if [ -f bin/bops ]; then
-              echo "| \`bops\` | $(du -h bin/bops | cut -f1) |"
+            if [ -f bin/bops-env ]; then
+              echo "| \`bops-env\` | $(du -h bin/bops-env | cut -f1) |"
             else
-              echo "| \`bops\` | ⚠️ not produced |"
+              echo "| \`bops-env\` | ⚠️ not produced |"
             fi
             echo ""
             echo "### Security"
-            echo "- **Cosign Signature:** Created \`bops.sig\`."
+            echo "- **Cosign Signature:** Created \`bops-env.sig\`."
             echo "- **Provenance:** Attestation generated and linked to GitHub."
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -130,21 +130,21 @@ jobs:
 
       - name: Sign binaries
         run: |
-          cosign sign-blob --yes --output-signature bin/bops-static.sig bin/bops-static
-          cosign sign-blob --yes --output-signature bin/bops-static-arm64.sig bin/bops-static-arm64
+          cosign sign-blob --yes --output-signature bin/bops-env-static.sig bin/bops-env-static
+          cosign sign-blob --yes --output-signature bin/bops-env-static-arm64.sig bin/bops-env-static-arm64
 
       - name: Generate Attestations
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            bin/bops-static
-            bin/bops-static-arm64
+            bin/bops-env-static
+            bin/bops-env-static-arm64
 
       - name: Upload Static Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bops-static
-          path: bin/bops-static*
+          name: bops-env-static
+          path: bin/bops-env-static*
           retention-days: 14
 
       - name: Static Build Summary
@@ -165,7 +165,7 @@ jobs:
             echo ""
             echo "| Binary | Size |"
             echo "| --- | --- |"
-            for b in bin/bops-static bin/bops-static-arm64; do
+            for b in bin/bops-env-static bin/bops-env-static-arm64; do
               if [ -f "$b" ]; then
                 echo "| \`$(basename "$b")\` | $(du -h "$b" | cut -f1) |"
               else

@@ -23,10 +23,10 @@ binary, especially if you didn't build it yourself:
 # Verify the Cosign signature
 cosign verify-blob --certificate-identity-regexp ".*" \
   --cert-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --signature bin/bops-static.sig bin/bops-static
+  --signature bin/bops-env-static.sig bin/bops-env-static
 
 # Verify the GitHub build-provenance attestation
-gh attest verify bin/bops-static --owner BlanketOps
+gh attest verify bin/bops-env-static --owner BlanketOps
 ```
 
 ## Reporting a Vulnerability

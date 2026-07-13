@@ -24,11 +24,14 @@ import (
 // bolted on). That model was the root cause of a whole session's worth of
 // ordering bugs: it has no way to express that Crossplane's provider.yaml
 // needs Crossplane core (a Helm install, not an embedded manifest)
-// running first, that cluster_strategies needs Shipwright's CRDs, or that
-// Flux's manifest needs Flux's CRDs fetched first. This restores the
-// original, explicit step-by-step sequence — each dependency knows what
-// it needs before it, because it's written down, not inferred from
-// directory names.
+// running first, that Shipwright's webhook needs its certs generated and
+// the deployment restarted before it'll actually work, or that Flux's
+// manifest needs Flux's CRDs fetched first.
+//
+// This restores the last version of this sequence that existed before a
+// refactor replaced it with the generic walk (git history: cmd/install.go
+// at 66eebb4, deleted in 063cec9) — each dependency knows what it needs
+// before it, because it's written down, not inferred from directory names.
 //
 // calico and multus are intentionally absent: calico is currently
 // breaking installs, and dependencies/multus/multus.yaml is (and always
@@ -59,10 +62,26 @@ func InstallAll() error {
 		return err
 	}
 
+	// Shipwright's webhook needs its TLS certs generated, approved, and
+	// the deployment restarted to pick up the CA bundle — not optional,
+	// the webhook doesn't work without this.
+	if err := RunShipwrightCertSetup(); err != nil {
+		return fmt.Errorf("shipwright cert setup failed: %w", err)
+	}
+
+	fmt.Println("📦 Installing Crossplane...")
 	if err := InstallCrossplane(); err != nil {
 		return fmt.Errorf("crossplane setup failed: %w", err)
 	}
 
+	// Needs Crossplane core (just installed above) already running — its
+	// CRD is what this Provider resource uses.
+	fmt.Println("📦 Installing Crossplane GitHub Upjet Provider...")
+	if err := DependenciesInstall([]string{"dependencies/crossplane/provider.yaml"}); err != nil {
+		return err
+	}
+
+	fmt.Println("📦 Installing External Secrets...")
 	if err := InstallExternalSecrets(); err != nil {
 		return fmt.Errorf("externalsecrets setup failed: %w", err)
 	}
@@ -84,13 +103,6 @@ func InstallAll() error {
 
 	fmt.Println("📦 Installing Flux UI + Config...")
 	if err := DependenciesInstall([]string{"dependencies/flux/fluxcdui.yaml"}); err != nil {
-		return err
-	}
-
-	// Needs Crossplane core (installed above via InstallCrossplane) to
-	// already be running — its CRD is what this Provider resource uses.
-	fmt.Println("📦 Installing Crossplane Github Upjet Provider...")
-	if err := DependenciesInstall([]string{"dependencies/crossplane/provider.yaml"}); err != nil {
 		return err
 	}
 
