@@ -1,3 +1,6 @@
+# Manually-triggered: cuts a release/<version> branch off develop and opens
+# a PR into main. First step of the two-step release flow — run
+# "Finalize Release" once all fix PRs are merged into the release branch.
 name: Create Release
 
 on:
@@ -14,9 +17,10 @@ permissions:
 jobs:
   create:
     runs-on: ubuntu-latest
-
-
     steps:
+      # GH_PAT (not the default GITHUB_TOKEN) is required here — the pushed
+      # release branch and opened PR need to trigger downstream workflows,
+      # which GitHub's default token is intentionally prevented from doing.
       - name: Checkout develop
         uses: actions/checkout@v7
         with:
@@ -34,6 +38,8 @@ jobs:
           git checkout -b release/${{ github.event.inputs.version }}
           git push origin release/${{ github.event.inputs.version }}
 
+      # PR creation failure (e.g. one already exists) is non-fatal — the
+      # branch is already pushed, so we warn instead of failing the run.
       - name: Open PR to main
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
@@ -51,18 +57,18 @@ jobs:
 
       - name: Release Summary
         run: |
-          cat >> $GITHUB_STEP_SUMMARY <<EOF 
-          # 🚀 Release Branch Created 
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # 🚀 Release Branch Created
           **Version:** \`${{ github.event.inputs.version }}\`
-          ## Completed 
-           - Checked out \`develop\`
-           - Created \`release/${{ github.event.inputs.version }}\` 
-           - Pushed release branch to origin 
-           - Opened (or attempted to open) a PR to \`main\` 
-           ## Release Flow 
-           -  develop → release/${{ github.event.inputs.version }} → main 
-           ## Next Steps 
-           1. Merge any release fixes into the release branch.
-           2. Validate the release candidate .
-           3. Run the **Finalize Release** workflow. 
+          ## Completed
+          - Checked out \`develop\`
+          - Created \`release/${{ github.event.inputs.version }}\`
+          - Pushed release branch to origin
+          - Opened (or attempted to open) a PR to \`main\`
+          ## Release Flow
+          - develop → release/${{ github.event.inputs.version }} → main
+          ## Next Steps
+          1. Merge any release fixes into the release branch.
+          2. Validate the release candidate.
+          3. Run the **Finalize Release** workflow.
           EOF

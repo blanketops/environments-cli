@@ -18,11 +18,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ntlaletsi70/blanketops-environments-cli/cmd"
+	"github.com/BlanketOps/environments-cli/cmd"
 )
 
 // uninstallPaths is the manifest set removed on uninstall, in reverse
-// dependency order. Must stay in sync with the embedded dependencies tree.
+// dependency order. Must stay in sync with InstallAll's explicit sequence
+// in cmd/all.go.
 var uninstallPaths = []string{
 	"dependencies/carvel/release.yaml",
 	"dependencies/argoevents/manifest.yaml",
@@ -50,18 +51,14 @@ type usageEntry struct {
 
 var usageEntries = [][]usageEntry{
 	{
-		{"bops install", "Install the full platform stack (all dependencies)"},
-		{"bops uninstall", "Remove all installed platform components"},
+		{"bops install", "Fetch and install the latest bops release (reserved, not yet implemented)"},
+		{"bops uninstall", "Remove a self-installed bops release (reserved, not yet implemented)"},
+		{"bops dist", "Reserved (not yet implemented)"},
 	},
-	// `dependencies install`/`dependencies uninstall` are commented out below
-	// (see main()) — they call the exact same InstallAll/UninstallAll as
-	// `install`/`uninstall` with no differentiation today, so keeping both
-	// names was just confusing. Revisit once dependency-layer installs are
-	// actually split out from the full install.
-	// {
-	// 	{"bops dependencies install", "Install only the dependency manifests"},
-	// 	{"bops dependencies uninstall", "Remove only the dependency manifests"},
-	// },
+	{
+		{"bops dependencies install", "Install the platform stack (all dependency manifests)"},
+		{"bops dependencies uninstall", "Remove the platform stack"},
+	},
 	{
 		{"bops cluster up [name]", "Create the named cluster if it doesn't exist"},
 		{"bops cluster down [name]", "Delete the named cluster"},
@@ -101,50 +98,48 @@ func main() {
 	}
 	switch os.Args[1] {
 	// ---------------------------------------------------------------------
-	// INSTALL / UNINSTALL
+	// INSTALL / UNINSTALL — reserved for self-install: fetching and
+	// installing the latest bops release/dist, the same job "dist" was
+	// already reserved for. Not implemented yet. The platform stack
+	// (the embedded dependencies/ tree) installs via `dependencies
+	// install`/`dependencies uninstall` below.
 	// ---------------------------------------------------------------------
 	case "install":
-		if err := cmd.InstallAll(); err != nil {
-			fmt.Println("❌", err)
-			os.Exit(1)
-		}
+		fmt.Println("ℹ️ install is reserved for fetching the latest bops release (not yet implemented)")
+		fmt.Println("ℹ️ Use `bops dependencies install` to install the platform stack")
+		return
 	case "uninstall":
-		if err := cmd.UninstallAll(uninstallPaths); err != nil {
-			fmt.Println("❌", err)
-			os.Exit(1)
-		}
+		fmt.Println("ℹ️ uninstall is reserved for removing a self-installed bops release (not yet implemented)")
+		fmt.Println("ℹ️ Use `bops dependencies uninstall` to remove the platform stack")
+		return
 	case "dist":
 		fmt.Println("ℹ️ dist command reserved (no-op for now)")
 		return
 	// ---------------------------------------------------------------------
-	// DEPENDENCIES — commented out, not deleted. install/uninstall above
-	// call the exact same cmd.InstallAll/cmd.UninstallAll with zero
-	// differentiation from these, so exposing both was just confusing.
-	// Bring this back once dependency-layer installs are actually split
-	// out from the full install (see main.go usageEntries for the matching
-	// usage-text removal).
+	// DEPENDENCIES — installs/removes the platform stack: every manifest
+	// under the embedded dependencies/ tree.
 	// ---------------------------------------------------------------------
-	// case "dependencies":
-	// 	if len(os.Args) < 3 {
-	// 		usage()
-	// 		os.Exit(1)
-	// 	}
-	// 	switch os.Args[2] {
-	// 	case "install":
-	// 		if err := cmd.InstallAll(); err != nil {
-	// 			fmt.Println("❌", err)
-	// 			os.Exit(1)
-	// 		}
-	// 	case "uninstall":
-	// 		if err := cmd.UninstallAll(uninstallPaths); err != nil {
-	// 			fmt.Println("❌", err)
-	// 			os.Exit(1)
-	// 		}
-	// 	default:
-	// 		fmt.Println("Unknown dependencies command:", os.Args[2])
-	// 		usage()
-	// 		os.Exit(1)
-	// 	}
+	case "dependencies":
+		if len(os.Args) < 3 {
+			usage()
+			os.Exit(1)
+		}
+		switch os.Args[2] {
+		case "install":
+			if err := cmd.InstallAll(); err != nil {
+				fmt.Println("❌", err)
+				os.Exit(1)
+			}
+		case "uninstall":
+			if err := cmd.UninstallAll(uninstallPaths); err != nil {
+				fmt.Println("❌", err)
+				os.Exit(1)
+			}
+		default:
+			fmt.Println("Unknown dependencies command:", os.Args[2])
+			usage()
+			os.Exit(1)
+		}
 	// ---------------------------------------------------------------------
 	// CLUSTER
 	// ---------------------------------------------------------------------

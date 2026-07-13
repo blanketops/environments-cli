@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ntlaletsi70/blanketops-environments-cli/util"
+	"github.com/BlanketOps/environments-cli/util"
 )
 
 var Assets embed.FS
@@ -93,7 +93,7 @@ func ApplyFromURL(url string) error {
 
 	p := util.NewSpinner(url)
 	for _, o := range objs {
-		gvk := o.GroupVersionKind()
+		gvk := o.GetObjectKind().GroupVersionKind()
 		p.Update(fmt.Sprintf("%s %s", gvk.Kind, o.GetName()))
 		if err := applyUnstructured(dc, mapper, o); err != nil {
 			p.Fail(err)
