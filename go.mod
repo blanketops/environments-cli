@@ -1,4 +1,4 @@
-module github.com/BlanketOps/environments-cli
+module github.com/blanketops/environments-cli
 
 go 1.26.0
 

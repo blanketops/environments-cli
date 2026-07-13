@@ -19,10 +19,10 @@ We take supply chain security seriously. Every release is signed and attested to
 
 ```bash
 # Verify the signature
-cosign verify-blob --certificate-identity-regexp ".*" --signature bin/bops-static.sig bin/bops-static
+cosign verify-blob --certificate-identity-regexp ".*" --signature bin/bops-env-static.sig bin/bops-env-static
 
 # Verify the attestation via GitHub CLI
-gh attest verify bin/bops-static --owner <your-org-or-username>
+gh attest verify bin/bops-env-static --owner <your-org-or-username>
 ```
 
 ---
@@ -86,18 +86,18 @@ scripts/          # Shell-based configuration logic
 
 ```bash
 # Install the entire platform stack
-bops install
+bops-env install
 
 # Uninstall everything
-bops uninstall
+bops-env uninstall
 
 # Install only dependencies
-bops dependencies install
+bops-env dependencies install
 
 # Cluster management
-bops cluster up [name]
-bops cluster down [name]
-bops cluster status [name]
+bops-env cluster up [name]
+bops-env cluster down [name]
+bops-env cluster status [name]
 ```
 
 ---
@@ -110,7 +110,7 @@ For ultra-minimal systems, build a fully static binary:
 mage static
 
 # Add to gokrazy
-gok add ./bin/bops-static
+gok add ./bin/bops-env-static
 gok build
 ```
 
@@ -123,7 +123,7 @@ gok build
 kind create cluster
 
 # Install the stack
-bops install
+bops-env install
 
 # Verify components
 kubectl get pods -A
@@ -135,7 +135,7 @@ kubectl get pods -A
 
 ```mermaid
 flowchart TD
-    Start[bops install] --> Carvel
+    Start[bops-env install] --> Carvel
     Carvel --> ArgoEvents
     ArgoEvents --> Tekton
     Tekton --> Dashboard

@@ -17,8 +17,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
-	"github.com/BlanketOps/environments-cli/cmd"
+	"github.com/blanketops/environments-cli/cmd"
 )
 
 // uninstallPaths is the manifest set removed on uninstall, in reverse
@@ -39,11 +40,42 @@ var uninstallPaths = []string{
 
 func banner() {
 	fmt.Println("🚀 BlanketOps Environments CLI")
-	fmt.Println("──────────────────────────────────────────")
+	printGrid([][2]string{
+		{"Binary", "bops-env"},
+		{"Repo", "github.com/blanketops/environments-cli"},
+	})
+}
+
+// printGrid renders a two-column bordered table. Column widths are
+// computed from content, not hand-counted, so the borders always line up
+// regardless of what's in the cells.
+func printGrid(rows [][2]string) {
+	col1, col2 := 0, 0
+	for _, r := range rows {
+		if len(r[0]) > col1 {
+			col1 = len(r[0])
+		}
+		if len(r[1]) > col2 {
+			col2 = len(r[1])
+		}
+	}
+
+	top := "┌" + strings.Repeat("─", col1+2) + "┬" + strings.Repeat("─", col2+2) + "┐"
+	mid := "├" + strings.Repeat("─", col1+2) + "┼" + strings.Repeat("─", col2+2) + "┤"
+	bot := "└" + strings.Repeat("─", col1+2) + "┴" + strings.Repeat("─", col2+2) + "┘"
+
+	fmt.Println(top)
+	for i, r := range rows {
+		fmt.Printf("│ %-*s │ %-*s │\n", col1, r[0], col2, r[1])
+		if i < len(rows)-1 {
+			fmt.Println(mid)
+		}
+	}
+	fmt.Println(bot)
 }
 
 // usageEntry pairs a command invocation with a one-line description of
-// what it does, so `bops` with no args is self-documenting.
+// what it does, so `bops-env` with no args is self-documenting.
 type usageEntry struct {
 	cmd  string
 	desc string
@@ -51,18 +83,18 @@ type usageEntry struct {
 
 var usageEntries = [][]usageEntry{
 	{
-		{"bops install", "Fetch and install the latest bops release (reserved, not yet implemented)"},
-		{"bops uninstall", "Remove a self-installed bops release (reserved, not yet implemented)"},
-		{"bops dist", "Reserved (not yet implemented)"},
+		{"bops-env install", "Fetch and install the latest bops-env release"},
+		{"bops-env uninstall", "Remove a self-installed bops-env release"},
+		{"bops-env dist", "Reserved (not yet implemented)"},
 	},
 	{
-		{"bops dependencies install", "Install the platform stack (all dependency manifests)"},
-		{"bops dependencies uninstall", "Remove the platform stack"},
+		{"bops-env dependencies install", "Install the platform stack (all dependency manifests)"},
+		{"bops-env dependencies uninstall", "Remove the platform stack"},
 	},
 	{
-		{"bops cluster up [name]", "Create the named cluster if it doesn't exist"},
-		{"bops cluster down [name]", "Delete the named cluster"},
-		{"bops cluster status [name]", "Show whether the named cluster is up"},
+		{"bops-env cluster up [name]", "Create the named cluster if it doesn't exist"},
+		{"bops-env cluster down [name]", "Delete the named cluster"},
+		{"bops-env cluster status [name]", "Show whether the named cluster is up"},
 	},
 }
 
@@ -98,20 +130,22 @@ func main() {
 	}
 	switch os.Args[1] {
 	// ---------------------------------------------------------------------
-	// INSTALL / UNINSTALL — reserved for self-install: fetching and
-	// installing the latest bops release/dist, the same job "dist" was
-	// already reserved for. Not implemented yet. The platform stack
-	// (the embedded dependencies/ tree) installs via `dependencies
-	// install`/`dependencies uninstall` below.
+	// INSTALL / UNINSTALL — self-install: fetches and installs the latest
+	// bops-env release from GitHub. The platform stack (the embedded
+	// dependencies/ tree) installs via `dependencies install`/
+	// `dependencies uninstall` below — that's a separate concern from
+	// installing the CLI binary itself.
 	// ---------------------------------------------------------------------
 	case "install":
-		fmt.Println("ℹ️ install is reserved for fetching the latest bops release (not yet implemented)")
-		fmt.Println("ℹ️ Use `bops dependencies install` to install the platform stack")
-		return
+		if err := cmd.SelfInstall(); err != nil {
+			fmt.Println("❌", err)
+			os.Exit(1)
+		}
 	case "uninstall":
-		fmt.Println("ℹ️ uninstall is reserved for removing a self-installed bops release (not yet implemented)")
-		fmt.Println("ℹ️ Use `bops dependencies uninstall` to remove the platform stack")
-		return
+		if err := cmd.SelfUninstall(); err != nil {
+			fmt.Println("❌", err)
+			os.Exit(1)
+		}
 	case "dist":
 		fmt.Println("ℹ️ dist command reserved (no-op for now)")
 		return

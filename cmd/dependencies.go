@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/BlanketOps/environments-cli/util"
+	"github.com/blanketops/environments-cli/util"
 )
 
 var Assets embed.FS
