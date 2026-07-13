@@ -1,3 +1,17 @@
+## [0.1.0] - 2026-07-13
+
+### 🚀 Features
+
+- Install/uninstall the operator alongside the CLI
+
+### 💼 Other
+
+- V0.1.0 (#49)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Update changelog for v0.0.9
+- Sync develop with main after release/v0.0.9
 ## [0.0.9] - 2026-07-13
 
 ### 🚀 Features
