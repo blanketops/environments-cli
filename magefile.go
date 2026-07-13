@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	AppName     = "bops"
+	AppName     = "bops-env"
 	BuildDir    = "."
 	BuildOutput = "bin/" + AppName
 	StaticOut   = "bin/" + AppName + "-static"

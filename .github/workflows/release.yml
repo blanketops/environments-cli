@@ -51,26 +51,26 @@ jobs:
 
       - name: Verify binaries
         run: |
-          test -x bin/bops
-          test -s bin/bops-static
-          test -s bin/bops-static-arm64
-          ./bin/bops || true   # banner+usage exits 1 by design; proves it executes
+          test -x bin/bops-env
+          test -s bin/bops-env-static
+          test -s bin/bops-env-static-arm64
+          ./bin/bops-env || true   # banner+usage exits 1 by design; proves it executes
 
       # 1. Sign binaries with Cosign (Keyless)
       - name: Sign binaries
         run: |
-          cosign sign-blob --yes --output-signature bin/bops.sig bin/bops
-          cosign sign-blob --yes --output-signature bin/bops-static.sig bin/bops-static
-          cosign sign-blob --yes --output-signature bin/bops-static-arm64.sig bin/bops-static-arm64
+          cosign sign-blob --yes --output-signature bin/bops-env.sig bin/bops-env
+          cosign sign-blob --yes --output-signature bin/bops-env-static.sig bin/bops-env-static
+          cosign sign-blob --yes --output-signature bin/bops-env-static-arm64.sig bin/bops-env-static-arm64
 
       # 2. Attest build provenance
       - name: Generate Attestations
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            bin/bops
-            bin/bops-static
-            bin/bops-static-arm64
+            bin/bops-env
+            bin/bops-env-static
+            bin/bops-env-static-arm64
 
       # The tag checkout above is a detached HEAD — switch to main so the
       # changelog commit below lands on a real branch, not the tag ref.
@@ -99,29 +99,29 @@ jobs:
         with:
           body_path: RELEASE_NOTES.md
           files: |
-            bin/bops
-            bin/bops-static
-            bin/bops-static-arm64
-            bin/bops.sig
-            bin/bops-static.sig
-            bin/bops-static-arm64.sig
+            bin/bops-env
+            bin/bops-env-static
+            bin/bops-env-static-arm64
+            bin/bops-env.sig
+            bin/bops-env-static.sig
+            bin/bops-env-static-arm64.sig
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Release Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<EOF
           # 📦 Release Published: ${{ github.ref_name }}
           ## Completed
-          - Built bops, bops-static, bops-static-arm64 from tag ${{ github.ref_name }}
+          - Built bops-env, bops-env-static, bops-env-static-arm64 from tag ${{ github.ref_name }}
           - Generated CHANGELOG.md using git-cliff and committed to main
           - Signed all binaries with Cosign and generated build-provenance attestations
           - Published GitHub Release with binaries and signatures attached
           ## Assets
-          - bops ($(du -h bin/bops | cut -f1))
-          - bops-static ($(du -h bin/bops-static | cut -f1))
-          - bops-static-arm64 ($(du -h bin/bops-static-arm64 | cut -f1))
+          - bops-env ($(du -h bin/bops-env | cut -f1))
+          - bops-env-static ($(du -h bin/bops-env-static | cut -f1))
+          - bops-env-static-arm64 ($(du -h bin/bops-env-static-arm64 | cut -f1))
           ## Verification
-          - **Sig:** \`cosign verify-blob --certificate-identity-regexp ".*" --cert-oidc-issuer "https://token.actions.githubusercontent.com" --signature bin/bops-static.sig bin/bops-static\`
-          - **Attest:** \`gh attest verify bin/bops-static --owner ${{ github.repository_owner }}\`
+          - **Sig:** \`cosign verify-blob --certificate-identity-regexp ".*" --cert-oidc-issuer "https://token.actions.githubusercontent.com" --signature bin/bops-env-static.sig bin/bops-env-static\`
+          - **Attest:** \`gh attest verify bin/bops-env-static --owner ${{ github.repository_owner }}\`
           EOF

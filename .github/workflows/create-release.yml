@@ -22,7 +22,7 @@ jobs:
       # release branch and opened PR need to trigger downstream workflows,
       # which GitHub's default token is intentionally prevented from doing.
       - name: Checkout develop
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: develop
           fetch-depth: 0
