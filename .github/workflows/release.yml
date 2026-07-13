@@ -106,7 +106,7 @@ jobs:
             bin/bops-env-static.sig
             bin/bops-env-static-arm64.sig
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Release Summary
         run: |

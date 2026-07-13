@@ -27,10 +27,10 @@ jobs:
       attestations: write # Required for GitHub Actions Attestations
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -62,7 +62,7 @@ jobs:
           subject-path: bin/bops-env
 
       - name: Upload CLI Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bops-env-dynamic
           path: |
@@ -109,10 +109,10 @@ jobs:
       attestations: write # Required for GitHub Actions Attestations
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -141,7 +141,7 @@ jobs:
             bin/bops-env-static-arm64
 
       - name: Upload Static Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bops-env-static
           path: bin/bops-env-static*
