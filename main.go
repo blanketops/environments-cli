@@ -83,8 +83,8 @@ type usageEntry struct {
 
 var usageEntries = [][]usageEntry{
 	{
-		{"bops-env install", "Fetch and install the latest bops-env release"},
-		{"bops-env uninstall", "Remove a self-installed bops-env release"},
+		{"bops-env install", "Fetch and install the latest bops-env release and operator"},
+		{"bops-env uninstall", "Remove a self-installed bops-env release and the operator"},
 		{"bops-env dist", "Reserved (not yet implemented)"},
 	},
 	{
@@ -141,7 +141,15 @@ func main() {
 			fmt.Println("❌", err)
 			os.Exit(1)
 		}
+		if err := cmd.InstallOperator(); err != nil {
+			fmt.Println("❌", err)
+			os.Exit(1)
+		}
 	case "uninstall":
+		if err := cmd.UninstallOperator(); err != nil {
+			fmt.Println("❌", err)
+			os.Exit(1)
+		}
 		if err := cmd.SelfUninstall(); err != nil {
 			fmt.Println("❌", err)
 			os.Exit(1)
