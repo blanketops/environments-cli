@@ -457,9 +457,17 @@
         <span class="stack-name">Crossplane</span>
         <span class="stack-role">infra orchestration</span>
       </div>
-      <div class="stack-item full">
+      <div class="stack-item">
         <span class="stack-name">External Secrets Operator</span>
         <span class="stack-role">secure secret integration</span>
+      </div>
+      <div class="stack-item">
+        <span class="stack-name">Knative Serving</span>
+        <span class="stack-role">serverless workload runtime</span>
+      </div>
+      <div class="stack-item full">
+        <span class="stack-name">Kourier</span>
+        <span class="stack-role">Knative ingress &amp; networking</span>
       </div>
     </div>
   </div>
@@ -477,7 +485,9 @@
       <span class="flow-node">Dashboard</span><span class="flow-arrow">→</span>
       <span class="flow-node">Shipwright</span><span class="flow-arrow">→</span>
       <span class="flow-node">Crossplane</span><span class="flow-arrow">→</span>
-      <span class="flow-node">Ext. Secrets</span>
+      <span class="flow-node">Ext. Secrets</span><span class="flow-arrow">→</span>
+      <span class="flow-node">Knative</span><span class="flow-arrow">→</span>
+      <span class="flow-node">Kourier</span>
     </div>
   </div>
 
@@ -537,11 +547,14 @@
       <div>&nbsp;&nbsp;├── <span class="tree-dir">carvel/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ Kapp Controller manifests</span></div>
       <div>&nbsp;&nbsp;├── <span class="tree-dir">argoevents/</span>&nbsp;&nbsp; <span class="tree-ann">↳ Argo Events manifests</span></div>
       <div>&nbsp;&nbsp;├── <span class="tree-dir">tekton/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ Tekton + Dashboard</span></div>
-      <div>&nbsp;&nbsp;└── <span class="tree-dir">shipwright/</span>&nbsp;&nbsp; <span class="tree-ann">↳ Shipwright Build</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">shipwright/</span>&nbsp;&nbsp; <span class="tree-ann">↳ Shipwright Build</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">knative/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ Serving CRDs + core</span></div>
+      <div>&nbsp;&nbsp;└── <span class="tree-dir">kourier/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ net-kourier</span></div>
       <div style="margin-top:0.5rem"><span class="tree-dir">scripts/</span></div>
       <div>&nbsp;&nbsp;├── <span class="tree-file">install-crossplane.sh</span></div>
       <div>&nbsp;&nbsp;├── <span class="tree-file">install-externalsecrets.sh</span></div>
-      <div>&nbsp;&nbsp;└── <span class="tree-file">setup-shipwright-cert.sh</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-file">setup-shipwright-cert.sh</span></div>
+      <div>&nbsp;&nbsp;└── <span class="tree-file">setup-knative-kourier.sh</span></div>
     </div>
   </div>
 
@@ -581,7 +594,10 @@
     <div class="cmd-block">
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">bops-env install</span></div>
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">bops-env uninstall</span></div>
+      <div class="cmd-line" style="margin-top:6px"><span class="prompt">$</span><span class="cmd">bops-env self install</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">bops-env self uninstall</span></div>
       <div class="cmd-line" style="margin-top:6px"><span class="prompt">$</span><span class="cmd">bops-env dependencies install</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">bops-env dependencies uninstall</span></div>
       <div class="cmd-line" style="margin-top:6px"><span class="prompt">$</span><span class="cmd">bops-env cluster up [name]</span></div>
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">bops-env cluster down [name]</span></div>
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">bops-env cluster status [name]</span></div>
@@ -595,9 +611,9 @@
       <div class="section-title">Build &amp; install</div>
     </div>
     <div class="cmd-block">
-      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">make build</span><span class="cmt"># standard binary</span></div>
-      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">make static</span><span class="cmt"># fully static (Gokrazy-compatible)</span></div>
-      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">make install</span><span class="cmt"># → $HOME/.local/bin or $HOME/bin</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">mage build</span><span class="cmt"># standard binary</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">mage static</span><span class="cmt"># fully static (Gokrazy-compatible)</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">mage install</span><span class="cmt"># → $HOME/.local/bin or $HOME/bin</span></div>
     </div>
   </div>
 
@@ -608,7 +624,7 @@
       <div class="section-title">Gokrazy workflow</div>
     </div>
     <div class="cmd-block">
-      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">make static</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">mage static</span></div>
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">gok add ./bin/bops-env-static</span></div>
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">gok build</span></div>
     </div>
@@ -623,6 +639,7 @@
     <div class="cmd-block">
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">kind create cluster</span></div>
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">bops-env install</span></div>
+      <div class="cmd-line"><span class="prompt">$</span><span class="cmd">bops-env dependencies install</span></div>
       <div class="cmd-line"><span class="prompt">$</span><span class="cmd">kubectl get pods -A</span></div>
     </div>
   </div>
@@ -636,10 +653,9 @@
     <div class="tree-block">
       <div><span class="tree-dir">blanketops-environments-cli/</span></div>
       <div>&nbsp;&nbsp;├── <span class="tree-file">main.go</span></div>
-      <div>&nbsp;&nbsp;├── <span class="tree-dir">cmd/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ install, uninstall, cluster</span></div>
-      <div>&nbsp;&nbsp;├── <span class="tree-dir">core/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ apply, kube, dependencies, wait</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">cmd/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ install, uninstall, self, dependencies, cluster, apply, kube</span></div>
       <div>&nbsp;&nbsp;├── <span class="tree-dir">dependencies/</span>&nbsp; <span class="tree-ann">↳ embedded manifests per component</span></div>
-      <div>&nbsp;&nbsp;├── <span class="tree-dir">scripts/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ crossplane, externalsecrets, shipwright-cert</span></div>
+      <div>&nbsp;&nbsp;├── <span class="tree-dir">scripts/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ crossplane, externalsecrets, shipwright-cert, knative-kourier</span></div>
       <div>&nbsp;&nbsp;├── <span class="tree-dir">util/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="tree-ann">↳ exec, fs, os helpers</span></div>
       <div>&nbsp;&nbsp;├── <span class="tree-file">magefile.go</span></div>
       <div>&nbsp;&nbsp;└── <span class="tree-file">Makefile</span></div>

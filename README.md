@@ -1,5 +1,3 @@
-we have 
-
 # 🚀 BlanketOps Environments — Platform Bootstrap CLI
 
 BlanketOps Environments CLI is a self-contained Kubernetes platform bootstrapper.
@@ -28,7 +26,7 @@ chmod +x bops-env-static-arm64
 sudo mv bops-env-static-arm64 /usr/local/bin/bops-env
 ```
 
-See [Provenance, Signing &amp; Security](#-provenance-signing--security) below to verify the download before running it.
+See [Provenance, Signing & Security](#-provenance-signing--security) below to verify the download before running it.
 
 ### Build and install locally
 
@@ -51,12 +49,15 @@ We take supply chain security seriously. Every release is signed and attested to
 
 **Verification:**
 
+Run these against the file as downloaded, before you `chmod`/`mv` it (substitute `bops-env-static-arm64` for the arm64 asset, or `bin/bops-env-static` if you built locally with `mage static`):
+
 ```bash
-# Verify the signature
-cosign verify-blob --certificate-identity-regexp ".*" --signature bin/bops-env-static.sig bin/bops-env-static
+# Verify the signature (fetch the matching .sig asset first)
+curl -LO https://github.com/blanketops/environments-cli/releases/latest/download/bops-env-static.sig
+cosign verify-blob --certificate-identity-regexp ".*" --signature bops-env-static.sig bops-env-static
 
 # Verify the attestation via GitHub CLI
-gh attest verify bin/bops-env-static --owner <your-org-or-username>
+gh attest verify bops-env-static --owner blanketops
 ```
 
 ---
