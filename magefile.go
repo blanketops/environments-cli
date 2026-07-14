@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 var (
@@ -37,6 +38,26 @@ func run(cmd string, args ...string) error {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	return c.Run()
+}
+
+// version resolves the release tag to stamp into the binary: the VERSION
+// env var if set (release.yml exports github.ref_name), otherwise
+// `git describe` for local dev builds, otherwise "dev".
+func version() string {
+	if v := os.Getenv("VERSION"); v != "" {
+		return v
+	}
+	out, err := exec.Command("git", "describe", "--tags", "--always", "--dirty").Output()
+	if err != nil {
+		return "dev"
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// ldflags stamps main.version via -X so `bops-env`'s banner can print the
+// version it was actually built from.
+func ldflags() string {
+	return "-X main.version=" + version()
 }
 
 func ensureBin() {
@@ -56,7 +77,7 @@ func Test() error {
 func Build() error {
 	fmt.Println("🔧 Building", AppName)
 	ensureBin()
-	err := run("go", "build", "-o", BuildOutput, BuildDir)
+	err := run("go", "build", "-ldflags", ldflags(), "-o", BuildOutput, BuildDir)
 	if err != nil {
 		return err
 	}
@@ -69,7 +90,7 @@ func Static() error {
 	ensureBin()
 	cmd := exec.Command("go", "build",
 		"-trimpath",
-		"-ldflags", "-s -w",
+		"-ldflags", "-s -w "+ldflags(),
 		"-o", StaticOut,
 		BuildDir,
 	)
@@ -93,7 +114,7 @@ func StaticArm64() error {
 	fmt.Println("🏗 Building static ARM64")
 	ensureBin()
 	cmd := exec.Command("go", "build",
-		"-ldflags", "-s -w",
+		"-ldflags", "-s -w "+ldflags(),
 		"-o", "bin/"+AppName+"-static-arm64",
 		BuildDir,
 	)

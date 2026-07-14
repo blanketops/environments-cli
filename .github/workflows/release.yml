@@ -44,6 +44,8 @@ jobs:
 
       # Build all three release binaries from the tagged commit.
       - name: Build binaries
+        env:
+          VERSION: ${{ github.ref_name }}
         run: |
           mage build
           mage static

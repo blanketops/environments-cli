@@ -38,40 +38,24 @@ var uninstallPaths = []string{
 	"dependencies/crossplane/provider.yaml",
 }
 
+// version is stamped at build time via -ldflags "-X main.version=...";
+// see magefile.go's ldflags() and release.yml's VERSION export.
+var version = "dev"
+
+const asciiBanner = ` ____     ___    ____    ____            _____   _   _  __     __
+| __ )   / _ \  |  _ \  / ___|          | ____| | \ | | \ \   / /
+|  _ \  | | | | | |_) | \___ \   _____  |  _|   |  \| |  \ \ / /
+| |_) | | |_| | |  __/   ___) | |_____| | |___  | |\  |   \ V /
+|____/   \___/  |_|     |____/          |_____| |_| \_|    \_/`
+
 func banner() {
-	fmt.Println("🚀 BlanketOps Environments CLI")
-	printGrid([][2]string{
-		{"Binary", "bops-env"},
-		{"Repo", "github.com/blanketops/environments-cli"},
-	})
-}
-
-// printGrid renders a two-column bordered table. Column widths are
-// computed from content, not hand-counted, so the borders always line up
-// regardless of what's in the cells.
-func printGrid(rows [][2]string) {
-	col1, col2 := 0, 0
-	for _, r := range rows {
-		if len(r[0]) > col1 {
-			col1 = len(r[0])
-		}
-		if len(r[1]) > col2 {
-			col2 = len(r[1])
-		}
-	}
-
-	top := "┌" + strings.Repeat("─", col1+2) + "┬" + strings.Repeat("─", col2+2) + "┐"
-	mid := "├" + strings.Repeat("─", col1+2) + "┼" + strings.Repeat("─", col2+2) + "┤"
-	bot := "└" + strings.Repeat("─", col1+2) + "┴" + strings.Repeat("─", col2+2) + "┘"
-
-	fmt.Println(top)
-	for i, r := range rows {
-		fmt.Printf("│ %-*s │ %-*s │\n", col1, r[0], col2, r[1])
-		if i < len(rows)-1 {
-			fmt.Println(mid)
-		}
-	}
-	fmt.Println(bot)
+	border := strings.Repeat("=", 60)
+	fmt.Println(border)
+	fmt.Println(asciiBanner)
+	fmt.Println()
+	fmt.Printf(" BlanketOps Environments CLI %s\n", version)
+	fmt.Printf(" Connected to: %s\n", cmd.CurrentContext())
+	fmt.Println(border)
 }
 
 // usageEntry pairs a command invocation with a one-line description of
