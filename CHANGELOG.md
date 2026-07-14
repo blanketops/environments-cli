@@ -1,3 +1,21 @@
+## [0.1.1] - 2026-07-14
+
+### 🚀 Features
+
+- ASCII banner with version/context, fix conflict retry and uninstall asset reads
+
+### 💼 Other
+
+- V0.1.1 (#51)
+
+### 🚜 Refactor
+
+- Separate CLI self-update from operator install/uninstall
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Update changelog for v0.1.0
+- Sync develop with main after release/v0.1.0
 ## [0.1.0] - 2026-07-13
 
 ### 🚀 Features
