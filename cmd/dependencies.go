@@ -199,3 +199,8 @@ func RunShipwrightCertSetup() error {
 	fmt.Println("🔐 Running Shipwright Certificate Setup Script...")
 	return runScript("scripts/setup-shipwright-cert.sh")
 }
+
+func RunKnativeKourierSetup() error {
+	fmt.Println("🔐 Running Knative/Kourier Setup Script...")
+	return runScript("scripts/setup-knative-kourier.sh")
+}

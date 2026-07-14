@@ -82,6 +82,8 @@ The installer deploys a full platform stack:
 | **Shipwright Build**          | Kubernetes-native image builds     |
 | **Crossplane**                | Infrastructure orchestration       |
 | **External Secrets Operator** | Secure secret integration          |
+| **Knative Serving**           | Serverless workload runtime        |
+| **Kourier**                   | Knative's ingress/networking layer |
 
 ---
 
@@ -189,7 +191,9 @@ flowchart TD
     Dashboard --> Shipwright
     Shipwright --> Crossplane
     Crossplane --> ExternalSecrets
-    ExternalSecrets --> Done[Platform Ready]
+    ExternalSecrets --> Knative
+    Knative --> Kourier
+    Kourier --> Done[Platform Ready]
 ```
 
 ---

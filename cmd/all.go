@@ -106,6 +106,26 @@ func InstallAll() error {
 		return err
 	}
 
+	fmt.Println("📦 Installing Knative Serving...")
+	if err := DependenciesInstall([]string{
+		"dependencies/knative/serving-crds.yaml",
+		"dependencies/knative/serving-core.yaml",
+	}); err != nil {
+		return err
+	}
+
+	fmt.Println("📦 Installing Kourier...")
+	if err := DependenciesInstall([]string{"dependencies/kourier/kourier.yaml"}); err != nil {
+		return err
+	}
+
+	// Points Knative Serving's ingress-class at Kourier — Knative doesn't
+	// pick a networking layer on its own, and this needs the Kourier
+	// controller (installed above) actually running first.
+	if err := RunKnativeKourierSetup(); err != nil {
+		return fmt.Errorf("knative/kourier setup failed: %w", err)
+	}
+
 	fmt.Println("🎉 BlanketOps environment installed successfully!")
 	return nil
 }

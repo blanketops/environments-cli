@@ -141,6 +141,8 @@ func deleteNamespaces() error {
 		"shipwright-build",
 		"kapp-controller",
 		"kapp-controller-packaging-global",
+		"knative-serving",
+		"kourier-system",
 	}
 
 	for _, ns := range namespaces {
