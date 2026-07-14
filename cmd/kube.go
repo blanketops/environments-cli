@@ -58,6 +58,33 @@ func BuildConfig() (*rest.Config, error) {
 	return cfg, nil
 }
 
+// CurrentContext returns the human-readable name of the cluster bops-env
+// would currently target, following the same kubeconfig precedence as
+// BuildConfig. Used only for display (banner), never for connecting.
+func CurrentContext() string {
+	path := os.Getenv("KUBECONFIG")
+	if path == "" {
+		if home, err := os.UserHomeDir(); err == nil {
+			path = filepath.Join(home, ".kube", "config")
+		}
+	}
+
+	if path != "" {
+		if cfg, err := clientcmd.LoadFromFile(path); err == nil && cfg.CurrentContext != "" {
+			if ctx, ok := cfg.Contexts[cfg.CurrentContext]; ok && ctx.Cluster != "" {
+				return ctx.Cluster
+			}
+			return cfg.CurrentContext
+		}
+	}
+
+	if _, err := rest.InClusterConfig(); err == nil {
+		return "in-cluster"
+	}
+
+	return "not connected"
+}
+
 // NewDynamicClient returns a dynamic client and associated rest.Config.
 func NewDynamicClient() (dynamic.Interface, *rest.Config, error) {
 	cfg, err := BuildConfig()

@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/blanketops/environments-cli/util"
 )
@@ -193,15 +194,21 @@ func robustApply(dc dynamic.Interface, mapper meta.RESTMapper, objs []*unstructu
 		}
 
 		// Try GET → Update OR fallback Create
-		existing, err := ri.Get(context.Background(), o.GetName(), metav1.GetOptions{})
+		_, err = ri.Get(context.Background(), o.GetName(), metav1.GetOptions{})
 		if err == nil {
-			// update path
-			o.SetResourceVersion(existing.GetResourceVersion())
-			_, err := ri.Update(context.Background(), o, metav1.UpdateOptions{})
-			if err == nil {
-				//fmt.Printf("   ✔ Updated %s %s\n", gvk.Kind, o.GetName())
-			}
-			return err
+			// update path — re-fetches on every attempt so a stale
+			// resourceVersion (e.g. a webhook controller rewriting the
+			// object between our Get and Update) is retried against the
+			// latest version instead of failing the whole install.
+			return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				latest, err := ri.Get(context.Background(), o.GetName(), metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				o.SetResourceVersion(latest.GetResourceVersion())
+				_, err = ri.Update(context.Background(), o, metav1.UpdateOptions{})
+				return err
+			})
 		}
 
 		// create path

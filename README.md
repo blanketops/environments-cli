@@ -1,3 +1,5 @@
+we have 
+
 # 🚀 BlanketOps Environments — Platform Bootstrap CLI
 
 BlanketOps Environments CLI is a self-contained Kubernetes platform bootstrapper.
@@ -26,7 +28,7 @@ chmod +x bops-env-static-arm64
 sudo mv bops-env-static-arm64 /usr/local/bin/bops-env
 ```
 
-See [Provenance, Signing & Security](#-provenance-signing--security) below to verify the download before running it.
+See [Provenance, Signing &amp; Security](#-provenance-signing--security) below to verify the download before running it.
 
 ### Build and install locally
 
@@ -71,8 +73,8 @@ That bundle isn't built here: it's published by [blanketops/environments-install
 
 The installer deploys a full platform stack:
 
-| Component                     | Role                               |
-| ----------------------------- | ----------------------------------- |
+| Component                           | Role                               |
+| ----------------------------------- | ---------------------------------- |
 | **Carvel Kapp Controller**    | Packaging and lifecycle management |
 | **Argo Events**               | Event-driven pipelines             |
 | **Tekton Pipelines**          | CI/CD execution engine             |

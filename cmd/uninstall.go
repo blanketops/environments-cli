@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
@@ -44,7 +43,7 @@ func UninstallManifests(manifestPaths []string) error {
 	for _, path := range manifestPaths {
 		p := util.NewSpinner(path)
 
-		data, err := os.ReadFile(path)
+		data, err := Assets.ReadFile(path)
 		if err != nil {
 			err = fmt.Errorf("read manifest %s: %w", path, err)
 			p.Fail(err)
