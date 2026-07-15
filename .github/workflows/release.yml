@@ -1,0 +1,129 @@
+# Tag-triggered release pipeline. Builds all release binaries, verifies and
+# signs them with Cosign (keyless/OIDC), generates GitHub build-provenance
+# attestations, updates the changelog on main, then publishes a GitHub
+# Release with the binaries and their signatures attached.
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: write
+  id-token: write    # Required for OIDC (Sigstore/Cosign)
+  attestations: write # Required for GitHub Actions Attestations
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install mage
+        run: go install github.com/magefile/mage@latest
+
+      - name: Install git-cliff
+        run: |
+          GITCLIFF_VERSION="2.13.0"
+          curl -L "https://github.com/orhun/git-cliff/releases/download/v${GITCLIFF_VERSION}/git-cliff-${GITCLIFF_VERSION}-x86_64-unknown-linux-gnu.tar.gz" -o git-cliff.tar.gz
+          tar xzf git-cliff.tar.gz
+          sudo mv "git-cliff-${GITCLIFF_VERSION}/git-cliff" /usr/local/bin/git-cliff
+          rm -rf git-cliff.tar.gz "git-cliff-${GITCLIFF_VERSION}"
+          git-cliff --version
+
+      - name: Install Cosign
+        run: go install github.com/sigstore/cosign/v2/cmd/cosign@latest
+
+      # Build all three release binaries from the tagged commit.
+      - name: Build binaries
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          mage build
+          mage static
+          mage staticarm64
+
+      - name: Verify binaries
+        run: |
+          test -x bin/bops-env
+          test -s bin/bops-env-static
+          test -s bin/bops-env-static-arm64
+          ./bin/bops-env || true   # banner+usage exits 1 by design; proves it executes
+
+      # 1. Sign binaries with Cosign (Keyless)
+      - name: Sign binaries
+        run: |
+          cosign sign-blob --yes --output-signature bin/bops-env.sig bin/bops-env
+          cosign sign-blob --yes --output-signature bin/bops-env-static.sig bin/bops-env-static
+          cosign sign-blob --yes --output-signature bin/bops-env-static-arm64.sig bin/bops-env-static-arm64
+
+      # 2. Attest build provenance
+      - name: Generate Attestations
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            bin/bops-env
+            bin/bops-env-static
+            bin/bops-env-static-arm64
+
+      # The tag checkout above is a detached HEAD — switch to main so the
+      # changelog commit below lands on a real branch, not the tag ref.
+      - name: Checkout main
+        run: |
+          git checkout main
+          git pull origin main
+
+      - name: Generate CHANGELOG.md
+        run: git-cliff --config .cliff.toml --output CHANGELOG.md
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): update changelog for ${{ github.ref_name }}" || echo "No changes"
+          git push origin main
+
+      - name: Generate release notes
+        run: git-cliff --config .cliff.toml --latest --output RELEASE_NOTES.md
+
+      # 3. Create Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: |
+            bin/bops-env
+            bin/bops-env-static
+            bin/bops-env-static-arm64
+            bin/bops-env.sig
+            bin/bops-env-static.sig
+            bin/bops-env-static-arm64.sig
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Release Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # 📦 Release Published: ${{ github.ref_name }}
+          ## Completed
+          - Built bops-env, bops-env-static, bops-env-static-arm64 from tag ${{ github.ref_name }}
+          - Generated CHANGELOG.md using git-cliff and committed to main
+          - Signed all binaries with Cosign and generated build-provenance attestations
+          - Published GitHub Release with binaries and signatures attached
+          ## Assets
+          - bops-env ($(du -h bin/bops-env | cut -f1))
+          - bops-env-static ($(du -h bin/bops-env-static | cut -f1))
+          - bops-env-static-arm64 ($(du -h bin/bops-env-static-arm64 | cut -f1))
+          ## Verification
+          - **Sig:** \`cosign verify-blob --certificate-identity-regexp ".*" --cert-oidc-issuer "https://token.actions.githubusercontent.com" --signature bin/bops-env-static.sig bin/bops-env-static\`
+          - **Attest:** \`gh attest verify bin/bops-env-static --owner ${{ github.repository_owner }}\`
+          EOF
