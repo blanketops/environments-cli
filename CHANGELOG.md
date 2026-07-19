@@ -1,3 +1,22 @@
+## [0.1.3] - 2026-07-19
+
+### 🚀 Features
+
+- Add Knative Serving + Kourier to the platform stack
+- Add per-dependency install/uninstall/status/list commands
+
+### 💼 Other
+
+- Merge release/v0.1.3 into main
+
+### 📚 Documentation
+
+- Fix broken markdown and sync readme.html with current CLI
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.2
+- *(release)* Update changelog for v0.1.2
 ## [0.1.2] - 2026-07-14
 
 ### 💼 Other
