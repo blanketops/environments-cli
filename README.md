@@ -143,6 +143,12 @@ bops-env self uninstall
 # Install the platform stack (dependency manifests)
 bops-env dependencies install
 
+# Manage a single dependency instead of the whole stack
+bops-env dependencies list
+bops-env dependencies install <name>
+bops-env dependencies status [name]
+bops-env dependencies uninstall <name>
+
 # Cluster management
 bops-env cluster up [name]
 bops-env cluster down [name]

@@ -71,7 +71,28 @@ func Vet() error {
 
 func Test() error {
 	fmt.Println("🧪 Testing", AppName)
-	return run("go", "test", "./...")
+	return run("go", "test", "-cover", "./...")
+}
+
+// Coverage writes a full coverage profile to bin/coverage.out and renders
+// it as HTML at bin/coverage.html, so gaps can be inspected file-by-file
+// instead of just the per-package percentage Test() prints.
+func Coverage() error {
+	fmt.Println("🧪 Testing", AppName, "with coverage report")
+	ensureBin()
+	profile := "bin/coverage.out"
+	if err := run("go", "test", "-coverprofile="+profile, "./..."); err != nil {
+		return err
+	}
+	if err := run("go", "tool", "cover", "-func="+profile); err != nil {
+		return err
+	}
+	html := "bin/coverage.html"
+	if err := run("go", "tool", "cover", "-html="+profile, "-o", html); err != nil {
+		return err
+	}
+	fmt.Println("✅ Coverage report:", html)
+	return nil
 }
 
 func Build() error {
