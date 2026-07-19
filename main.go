@@ -79,8 +79,10 @@ var usageEntries = [][]usageEntry{
 		{"bops-env self uninstall", "Remove a self-installed bops-env CLI binary"},
 	},
 	{
-		{"bops-env dependencies install", "Install the platform stack (all dependency manifests)"},
-		{"bops-env dependencies uninstall", "Remove the platform stack"},
+		{"bops-env dependencies list", "List individually addressable dependencies"},
+		{"bops-env dependencies install [name]", "Install the platform stack, or just [name]"},
+		{"bops-env dependencies uninstall [name]", "Remove the platform stack, or just [name]"},
+		{"bops-env dependencies status [name]", "Show install status for all deps, or just [name]"},
 	},
 	{
 		{"bops-env cluster up [name]", "Create the named cluster if it doesn't exist"},
@@ -174,17 +176,46 @@ func main() {
 			usage()
 			os.Exit(1)
 		}
+		depName := ""
+		if len(os.Args) >= 4 {
+			depName = os.Args[3]
+		}
 		switch os.Args[2] {
 		case "install":
-			if err := cmd.InstallAll(); err != nil {
+			var err error
+			if depName == "" {
+				err = cmd.InstallAll()
+			} else {
+				err = cmd.InstallDependency(depName)
+			}
+			if err != nil {
 				fmt.Println("❌", err)
 				os.Exit(1)
 			}
 		case "uninstall":
-			if err := cmd.UninstallAll(uninstallPaths); err != nil {
+			var err error
+			if depName == "" {
+				err = cmd.UninstallAll(uninstallPaths)
+			} else {
+				err = cmd.UninstallDependency(depName)
+			}
+			if err != nil {
 				fmt.Println("❌", err)
 				os.Exit(1)
 			}
+		case "status":
+			var err error
+			if depName == "" {
+				err = cmd.StatusAll()
+			} else {
+				err = cmd.StatusDependency(depName)
+			}
+			if err != nil {
+				fmt.Println("❌", err)
+				os.Exit(1)
+			}
+		case "list":
+			cmd.ListDependencies()
 		default:
 			fmt.Println("Unknown dependencies command:", os.Args[2])
 			usage()
