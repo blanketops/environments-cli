@@ -67,7 +67,7 @@ jobs:
 
       # 2. Attest build provenance
       - name: Generate Attestations
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             bin/bops-env
