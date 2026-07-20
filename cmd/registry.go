@@ -15,13 +15,25 @@ limitations under the License.
 
 package cmd
 
-import "fmt"
+import (
+	"fmt"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
 
 // Dependency describes one individually addressable piece of the platform
-// stack: its embedded manifests (if any), the namespace to probe for status,
+// stack: its embedded manifests (if any), how to probe its install status,
 // and — where "apply the manifests" or "delete the manifests" isn't the
 // whole story (Helm-installed components, webhook cert setup, remote CRD
 // fetches) — install/uninstall overrides.
+//
+// Status is probed one of two ways: most components install into their own
+// namespace, so Namespace is enough (existence of the namespace is a coarse
+// but cheap installed/not-installed signal). Components with no namespace
+// of their own — e.g. buildstrategies, which only creates cluster-scoped
+// ClusterBuildStrategy objects — set StatusGVR/StatusName instead, probing
+// a specific cluster-scoped resource directly rather than falling back to
+// "unknown".
 //
 // This registry exists so each component can be created/read/updated/
 // deleted on its own via `bops-env dependencies <verb> <name>`, alongside
@@ -34,8 +46,13 @@ type Dependency struct {
 	Name        string
 	Description string
 	Manifests   []string
-	Namespace   string // probed for status; empty means "no namespace to check"
+	Namespace   string // namespaced status probe; empty if StatusGVR is set instead
 	HelmRelease string // set only for Helm-installed components, used for status/uninstall
+
+	// StatusGVR/StatusName probe a specific cluster-scoped resource for
+	// components with no namespace of their own. Both must be set together.
+	StatusGVR  schema.GroupVersionResource
+	StatusName string
 
 	install   func() error
 	uninstall func() error
@@ -120,6 +137,10 @@ var registry = []Dependency{
 			"dependencies/cluster_strategies/kaniko.yaml",
 			"dependencies/cluster_strategies/buildah_shipwright_managed_push_cr.yaml",
 		},
+		// Cluster-scoped resources, no namespace of their own — probe one
+		// of the three ClusterBuildStrategy objects directly instead.
+		StatusGVR:  schema.GroupVersionResource{Group: "shipwright.io", Version: "v1beta1", Resource: "clusterbuildstrategies"},
+		StatusName: "kaniko",
 	},
 	{
 		Name:        "flux",

@@ -106,26 +106,54 @@ func StatusAll() error {
 	return nil
 }
 
-func printDependencyStatus(dep *Dependency, installed bool) {
-	if dep.Namespace == "" {
-		fmt.Printf("❔ %-18s status unknown (no namespace to check)\n", dep.Name)
-		return
-	}
-	if installed {
-		fmt.Printf("✅ %-18s installed (namespace %q present)\n", dep.Name, dep.Namespace)
-	} else {
-		fmt.Printf("⭕ %-18s not installed (namespace %q not found)\n", dep.Name, dep.Namespace)
+// statusTarget describes what dependencyInstalled probes for dep, for
+// display purposes. Empty means neither probe is configured.
+func statusTarget(dep *Dependency) string {
+	switch {
+	case dep.StatusName != "":
+		return fmt.Sprintf("%s %q", dep.StatusGVR.Resource, dep.StatusName)
+	case dep.Namespace != "":
+		return fmt.Sprintf("namespace %q", dep.Namespace)
+	default:
+		return ""
 	}
 }
 
-// dependencyInstalled reports whether dep's namespace exists, via the
-// given client — injectable so tests can pass a fake dynamic.Interface
-// instead of dialing a real cluster.
+func printDependencyStatus(dep *Dependency, installed bool) {
+	target := statusTarget(dep)
+	if target == "" {
+		fmt.Printf("❔ %-18s status unknown (nothing to check)\n", dep.Name)
+		return
+	}
+	if installed {
+		fmt.Printf("✅ %-18s installed (%s present)\n", dep.Name, target)
+	} else {
+		fmt.Printf("⭕ %-18s not installed (%s not found)\n", dep.Name, target)
+	}
+}
+
+// dependencyInstalled reports whether dep looks installed, via the given
+// client — injectable so tests can pass a fake dynamic.Interface instead
+// of dialing a real cluster. Namespaced components are probed by their
+// Namespace; components with no namespace of their own (cluster-scoped
+// resources only, e.g. buildstrategies) are probed via StatusGVR/StatusName
+// instead. Neither set means "nothing to check".
 func dependencyInstalled(dc dynamic.Interface, dep *Dependency) (bool, error) {
-	if dep.Namespace == "" {
+	var ri dynamic.ResourceInterface
+	var name string
+
+	switch {
+	case dep.StatusName != "":
+		ri = dc.Resource(dep.StatusGVR)
+		name = dep.StatusName
+	case dep.Namespace != "":
+		ri = dc.Resource(namespaceGVR)
+		name = dep.Namespace
+	default:
 		return false, nil
 	}
-	_, err := dc.Resource(namespaceGVR).Get(context.Background(), dep.Namespace, metav1.GetOptions{})
+
+	_, err := ri.Get(context.Background(), name, metav1.GetOptions{})
 	if err == nil {
 		return true, nil
 	}

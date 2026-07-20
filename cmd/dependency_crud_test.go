@@ -23,8 +23,11 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic/fake"
 )
+
+var clusterBuildStrategyGVR = schema.GroupVersionResource{Group: "shipwright.io", Version: "v1beta1", Resource: "clusterbuildstrategies"}
 
 // captureStdout redirects os.Stdout for the duration of fn and returns
 // everything written to it. The functions under test here (ListDependencies,
@@ -68,8 +71,8 @@ func TestPrintDependencyStatus(t *testing.T) {
 		want      string
 	}{
 		{
-			name:      "no namespace to check",
-			dep:       &Dependency{Name: "buildstrategies"},
+			name:      "neither probe configured",
+			dep:       &Dependency{Name: "nothingtocheck"},
 			installed: false,
 			want:      "❔",
 		},
@@ -82,6 +85,18 @@ func TestPrintDependencyStatus(t *testing.T) {
 		{
 			name:      "namespace absent",
 			dep:       &Dependency{Name: "knative", Namespace: "knative-serving"},
+			installed: false,
+			want:      "⭕",
+		},
+		{
+			name:      "cluster-scoped resource present",
+			dep:       &Dependency{Name: "buildstrategies", StatusGVR: clusterBuildStrategyGVR, StatusName: "kaniko"},
+			installed: true,
+			want:      "✅",
+		},
+		{
+			name:      "cluster-scoped resource absent",
+			dep:       &Dependency{Name: "buildstrategies", StatusGVR: clusterBuildStrategyGVR, StatusName: "kaniko"},
 			installed: false,
 			want:      "⭕",
 		},
@@ -114,16 +129,34 @@ func fakeNamespace(name string) *unstructured.Unstructured {
 	}
 }
 
-func TestDependencyInstalled(t *testing.T) {
-	dc := fake.NewSimpleDynamicClient(runtime.NewScheme(), fakeNamespace("kapp-controller"))
+// fakeClusterBuildStrategy builds an unstructured cluster-scoped
+// ClusterBuildStrategy object, matching what buildstrategies' StatusGVR
+// probe looks up.
+func fakeClusterBuildStrategy(name string) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "shipwright.io/v1beta1",
+			"kind":       "ClusterBuildStrategy",
+			"metadata": map[string]interface{}{
+				"name": name,
+			},
+		},
+	}
+}
 
-	t.Run("no namespace configured", func(t *testing.T) {
-		installed, err := dependencyInstalled(dc, &Dependency{Name: "buildstrategies"})
+func TestDependencyInstalled(t *testing.T) {
+	dc := fake.NewSimpleDynamicClient(runtime.NewScheme(),
+		fakeNamespace("kapp-controller"),
+		fakeClusterBuildStrategy("kaniko"),
+	)
+
+	t.Run("neither probe configured", func(t *testing.T) {
+		installed, err := dependencyInstalled(dc, &Dependency{Name: "nothingtocheck"})
 		if err != nil {
 			t.Fatalf("dependencyInstalled returned error: %v", err)
 		}
 		if installed {
-			t.Error("dependencyInstalled with no Namespace field = true, want false")
+			t.Error("dependencyInstalled with no Namespace or StatusName field = true, want false")
 		}
 	})
 
@@ -144,6 +177,26 @@ func TestDependencyInstalled(t *testing.T) {
 		}
 		if installed {
 			t.Error("dependencyInstalled for a namespace absent from the cluster = true, want false")
+		}
+	})
+
+	t.Run("cluster-scoped resource exists on cluster", func(t *testing.T) {
+		installed, err := dependencyInstalled(dc, &Dependency{Name: "buildstrategies", StatusGVR: clusterBuildStrategyGVR, StatusName: "kaniko"})
+		if err != nil {
+			t.Fatalf("dependencyInstalled returned error: %v", err)
+		}
+		if !installed {
+			t.Error("dependencyInstalled for a cluster-scoped resource present on the cluster = false, want true")
+		}
+	})
+
+	t.Run("cluster-scoped resource missing from cluster", func(t *testing.T) {
+		installed, err := dependencyInstalled(dc, &Dependency{Name: "buildstrategies", StatusGVR: clusterBuildStrategyGVR, StatusName: "buildpacks-v3"})
+		if err != nil {
+			t.Fatalf("dependencyInstalled returned error: %v", err)
+		}
+		if installed {
+			t.Error("dependencyInstalled for a cluster-scoped resource absent from the cluster = true, want false")
 		}
 	})
 }
