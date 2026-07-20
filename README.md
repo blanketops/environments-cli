@@ -36,7 +36,7 @@ cd environments-cli
 mage install   # builds and installs to ~/.local/bin (falls back to ~/bin if noexec)
 ```
 
-Either way, once `bops-env` is on your PATH, `bops-env self install` re-fetches and replaces the CLI binary itself, kept separate from `bops-env install`, which only ever manages the operator on your cluster.
+Either way, once `bops-env` is on your PATH, `bops-env self install` re-fetches and replaces the CLI binary itself, kept separate from `bops-env install`, which only ever manages the operator on your cluster. Run `bops-env version` any time to check which build is currently installed.
 
 ---
 
@@ -130,6 +130,9 @@ scripts/          # Shell-based configuration logic
 ## 🚀 Usage
 
 ```bash
+# Print the installed CLI's build version
+bops-env version
+
 # Install the BlanketOps Environments operator
 bops-env install
 
