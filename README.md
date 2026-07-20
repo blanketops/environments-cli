@@ -10,7 +10,7 @@ The binary embeds all manifests and bootstrap scripts, making it ideal for minim
 
 ## 📥 Installation
 
-### Download a prebuilt binary
+### Linux
 
 Grab the latest signed release from the [Releases page](https://github.com/blanketops/environments-cli/releases/latest):
 
@@ -26,17 +26,31 @@ chmod +x bops-env-static-arm64
 sudo mv bops-env-static-arm64 /usr/local/bin/bops-env
 ```
 
-See [Provenance, Signing & Security](#-provenance-signing--security) below to verify the download before running it.
+See [Provenance, Signing & Security](#-provenance-signing--security) below to verify the download before running it. `bops-env self install`/`self uninstall` work here too, since these are the binaries they fetch.
 
-### Build and install locally
+### Windows
+
+No prebuilt binary is published yet — build from source (see [Build from source](#build-from-source) below). Requires Go and [mage](https://magefile.org) on your PATH; `mage install` places `bops-env.exe` under `%USERPROFILE%\.local\bin`.
+
+`bops-env self install`/`self uninstall` aren't supported on Windows (no binary to fetch) — rebuild and re-run `mage install` instead to upgrade.
+
+A handful of `bops-env dependencies install <name>` targets (`crossplane`, `externalsecrets`, `shipwright`, `kourier`) run setup scripts via `bash`, which isn't present on stock Windows — those specific commands need [WSL](https://learn.microsoft.com/windows/wsl/) or Git Bash on your `PATH`. Everything else (including `bops-env dependencies install` for the other components, `status`, `list`, `cluster`, `install`/`uninstall` of the operator) is plain Go and has no such dependency.
+
+### macOS
+
+No prebuilt binary is published yet either, but no extra setup is needed — macOS ships `bash` and the rest of the BSD userland already, so [Build from source](#build-from-source) below works as-is.
+
+### Build from source
 
 ```bash
 git clone https://github.com/blanketops/environments-cli.git
 cd environments-cli
-mage install   # builds and installs to ~/.local/bin (falls back to ~/bin if noexec)
+mage install   # builds and installs to ~/.local/bin (falls back to ~/bin if noexec; %USERPROFILE%\.local\bin on Windows)
 ```
 
-Either way, once `bops-env` is on your PATH, `bops-env self install` re-fetches and replaces the CLI binary itself, kept separate from `bops-env install`, which only ever manages the operator on your cluster. Run `bops-env version` any time to check which build is currently installed.
+This is the Windows and macOS install path today, and works the same way on Linux as an alternative to the prebuilt binary above.
+
+Run `bops-env version` any time to check which build is currently installed.
 
 ---
 
