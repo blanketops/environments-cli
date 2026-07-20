@@ -1,3 +1,21 @@
+## [0.1.4] - 2026-07-20
+
+### 🚀 Features
+
+- Add bops-env version command
+
+### 🐛 Bug Fixes
+
+- Probe cluster-scoped resources for dependency status
+
+### 💼 Other
+
+- Merge release/v0.1.4 into main
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Update changelog for v0.1.3
+- Sync develop with main after release/v0.1.3
 ## [0.1.3] - 2026-07-19
 
 ### 🚀 Features
