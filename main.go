@@ -70,6 +70,7 @@ type usageEntry struct {
 
 var usageEntries = [][]usageEntry{
 	{
+		{"bops-env version", "Print the installed bops-env build version"},
 		{"bops-env install", "Install the BlanketOps Environments operator"},
 		{"bops-env uninstall", "Remove the BlanketOps Environments operator"},
 		{"bops-env dist", "Reserved (not yet implemented)"},
@@ -112,6 +113,16 @@ func usage() {
 }
 
 func main() {
+	// version/--version is handled before the banner (which dials the
+	// current kube context just to print it) and before cmd.Assets is
+	// wired up — neither is needed just to report which build this is,
+	// and it keeps `bops-env version` usable in scripts without banner
+	// noise to strip out.
+	if len(os.Args) >= 2 && (os.Args[1] == "version" || os.Args[1] == "--version") {
+		fmt.Println(version)
+		return
+	}
+
 	// Wire the embedded assets into the cmd package before anything can
 	// read them — cmd.Assets is a zero-value embed.FS until this runs.
 	cmd.Assets = Assets
