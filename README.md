@@ -132,11 +132,11 @@ flowchart TD
 
 ## 📦 Fully Embedded Assets
 
-All manifests and scripts are compiled into the binary via `go:embed`. Zero filesystem dependencies at runtime.
+All manifests are compiled into the binary via `go:embed`, and setup/teardown logic is native Go compiled straight in. Zero filesystem dependencies at runtime.
 
 ```
-dependencies/     # Embedded YAML manifests
-scripts/          # Shell-based configuration logic
+dependencies/     # Embedded YAML manifests (go:embed)
+scripts/          # Native Go setup/teardown routines (package scripts, called by cmd)
 ```
 
 ---

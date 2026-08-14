@@ -16,5 +16,5 @@ package main
 
 import "embed"
 
-//go:embed dependencies scripts
+//go:embed dependencies
 var Assets embed.FS

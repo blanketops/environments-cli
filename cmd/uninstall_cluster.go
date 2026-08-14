@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/blanketops/environments-cli/scripts"
 )
 
 // ---------------------------------------------------------------------------
@@ -28,13 +30,7 @@ func RunUninstallScripts() error {
 	_ = exec.Command("helm", "uninstall", "crossplane", "-n", "crossplane-system").Run()
 	_ = exec.Command("helm", "uninstall", "external-secrets", "-n", "external-secrets").Run()
 	_ = exec.Command("helm", "uninstall", "flux", "-n", "flux-system").Run()
-
-	// install-crossplane.sh / install-externalsecrets.sh have no --uninstall
-	// handling at all — they unconditionally `helm upgrade --install`, so
-	// calling them here would silently reinstall what the helm uninstall
-	// calls above just removed. The helm uninstall calls are the actual
-	// removal; don't call these install scripts on the way out.
-	return runScript("scripts/silence-all-finalizers.sh")
+	return scripts.SilenceFinalizers()
 }
 
 // ---------------------------------------------------------------------------
