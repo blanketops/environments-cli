@@ -21,16 +21,37 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 )
+
+// exeSuffix returns ".exe" on Windows, where a binary won't run via
+// implicit PATH/extension lookup without it, and "" everywhere else.
+func exeSuffix() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+	return ""
+}
+
+// userHomeDir wraps os.UserHomeDir (which checks %USERPROFILE% on
+// Windows, $HOME elsewhere) with the same $HOME fallback os.UserHomeDir
+// itself would use if that lookup ever fails.
+func userHomeDir() string {
+	if h, err := os.UserHomeDir(); err == nil {
+		return h
+	}
+	return os.Getenv("HOME")
+}
 
 var (
 	AppName     = "bops-env"
 	BuildDir    = "."
-	BuildOutput = "bin/" + AppName
+	BuildOutput = "bin/" + AppName + exeSuffix()
 	StaticOut   = "bin/" + AppName + "-static"
-	InstallDir  = os.Getenv("HOME") + "/.local/bin"
-	FallbackDir = os.Getenv("HOME") + "/bin"
+	InstallDir  = filepath.Join(userHomeDir(), ".local", "bin")
+	FallbackDir = filepath.Join(userHomeDir(), "bin")
 )
 
 func run(cmd string, args ...string) error {
@@ -38,6 +59,17 @@ func run(cmd string, args ...string) error {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	return c.Run()
+}
+
+// copyFile copies src to dst byte-for-byte (overwriting dst) and marks it
+// executable, in place of shelling out to `cp`/`chmod` — neither exists
+// natively on Windows, unlike Linux/macOS where both are always present.
+func copyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0o755)
 }
 
 // version resolves the release tag to stamp into the binary: the VERSION
@@ -125,8 +157,14 @@ func Static() error {
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	fmt.Println("🔎 Verifying static binary")
-	run("ldd", StaticOut)
+	if runtime.GOOS == "linux" {
+		fmt.Println("🔎 Verifying static binary")
+		run("ldd", StaticOut)
+	} else {
+		// ldd isn't available on macOS/Windows hosts — this cross-compiled
+		// linux binary can't be verified locally on those, only built.
+		fmt.Println("ℹ️ skipping ldd check (not available on", runtime.GOOS+")")
+	}
 	fmt.Println("➡ Ready for gokrazy")
 	return nil
 }
@@ -159,23 +197,31 @@ func Install() error {
 		return err
 	}
 	os.MkdirAll(InstallDir, 0755)
-	target := InstallDir + "/" + AppName
-	err := run("cp", BuildOutput, target)
-	if err != nil {
+	target := filepath.Join(InstallDir, filepath.Base(BuildOutput))
+	if err := copyFile(BuildOutput, target); err != nil {
 		return err
 	}
-	run("chmod", "+x", target)
+
+	if runtime.GOOS == "windows" {
+		// Windows has no noexec-mount concept to probe for below, so
+		// there's no fallback-directory case to check — installing to
+		// InstallDir is the whole story.
+		fmt.Println("✅ Installed to", target)
+		fmt.Println("ℹ️ Add this to your PATH if it isn't already:")
+		fmt.Println("  ", InstallDir)
+		return nil
+	}
+
 	fmt.Println("🔍 Testing executability")
-	testFile := InstallDir + "/.__exec_test"
+	testFile := filepath.Join(InstallDir, ".__exec_test")
 	os.WriteFile(testFile, []byte("#!/bin/sh\necho test_ok\n"), 0755)
-	err = run(testFile)
+	err := run(testFile)
 	os.Remove(testFile)
 	if err != nil {
 		fmt.Println("⚠️ noexec detected — switching to", FallbackDir)
 		os.MkdirAll(FallbackDir, 0755)
-		target = FallbackDir + "/" + AppName
-		run("cp", BuildOutput, target)
-		run("chmod", "+x", target)
+		target = filepath.Join(FallbackDir, filepath.Base(BuildOutput))
+		copyFile(BuildOutput, target)
 		fmt.Println("🎉 Installed to", target)
 		fmt.Println("ℹ️ Add to PATH:")
 		fmt.Println("export PATH=\"" + FallbackDir + ":$PATH\"")
@@ -187,11 +233,14 @@ func Install() error {
 
 func Uninstall() error {
 	fmt.Println("🧹 Uninstalling", AppName)
-	os.Remove(InstallDir + "/" + AppName)
-	os.Remove(FallbackDir + "/" + AppName)
-	run("sudo", "rm", "-f", "/usr/local/bin/"+AppName)
-	os.Remove("bin/" + AppName)
-	os.Remove("bin/" + AppName + "-static")
+	name := filepath.Base(BuildOutput)
+	os.Remove(filepath.Join(InstallDir, name))
+	os.Remove(filepath.Join(FallbackDir, name))
+	if runtime.GOOS != "windows" {
+		run("sudo", "rm", "-f", "/usr/local/bin/"+AppName)
+	}
+	os.Remove(BuildOutput)
+	os.Remove(StaticOut)
 	os.Remove("bin/" + AppName + "-static-arm64")
 	fmt.Println("✔️ All copies removed")
 	return nil
