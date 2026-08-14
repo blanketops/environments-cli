@@ -1,3 +1,27 @@
+## [0.1.5] - 2026-08-14
+
+### 🚀 Features
+
+- Support building/installing bops-env on Windows and macOS
+
+### 🐛 Bug Fixes
+
+- *(deps)* Bump golang.org/x/net to v0.55.0 (CVE-2026-25680) (#63)
+
+### 💼 Other
+
+- Merge release/v0.1.5 into main
+
+### 🚜 Refactor
+
+- Make scripts a callable package instead of standalone programs (#62)
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.4
+- *(release)* Update changelog for v0.1.4
+- Sync develop with main after release/v0.1.4 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
+- *(ci)* Bump actions/setup-go from 5 to 7 (#55)
 ## [0.1.4] - 2026-07-20
 
 ### 🚀 Features
