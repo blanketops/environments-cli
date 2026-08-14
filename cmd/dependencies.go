@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -160,47 +159,32 @@ func InstallFluxCRDs() error {
 	return nil
 }
 
-// ---------------------------------------------------------------------------
-// Script runner (embedded)
-// ---------------------------------------------------------------------------
-func runScript(path string, args ...string) error {
-	data, err := Assets.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp("", "environments-script-*")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmp.Name())
-
-	if _, err := io.Copy(tmp, bytes.NewReader(data)); err != nil {
-		return err
-	}
-	tmp.Close()
-
-	cmd := exec.Command("bash", append([]string{tmp.Name()}, args...)...)
+func runCommand(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
-func InstallCrossplane() error {
-	fmt.Println("🔐 Running Crossplane Setup Script...")
-	return runScript("scripts/install-crossplane.sh")
-}
-
-func InstallExternalSecrets() error {
-	fmt.Println("🔐 Running ExternalSecrets Setup Script...")
-	return runScript("scripts/install-externalsecrets.sh")
-}
-
-func RunShipwrightCertSetup() error {
-	fmt.Println("🔐 Running Shipwright Certificate Setup Script...")
-	return runScript("scripts/setup-shipwright-cert.sh")
-}
-
 func RunKnativeKourierSetup() error {
-	fmt.Println("🔐 Running Knative/Kourier Setup Script...")
-	return runScript("scripts/setup-knative-kourier.sh")
+	fmt.Println("🔐 Configuring Knative to use Kourier ingress...")
+
+	if _, err := exec.LookPath("kubectl"); err != nil {
+		return fmt.Errorf("kubectl is required: %w", err)
+	}
+
+	timeout := os.Getenv("TIMEOUT")
+	if timeout == "" {
+		timeout = "5m"
+	}
+	if err := runCommand("kubectl", "-n", "knative-serving", "rollout", "status", "deployment/net-kourier-controller", "--timeout="+timeout); err != nil {
+		return fmt.Errorf("wait for net-kourier controller: %w", err)
+	}
+
+	patch := `{"data":{"ingress-class":"kourier.ingress.networking.knative.dev"}}`
+	if err := runCommand("kubectl", "patch", "configmap/config-network", "--namespace", "knative-serving", "--type", "merge", "--patch", patch); err != nil {
+		return fmt.Errorf("patch Knative networking config: %w", err)
+	}
+	fmt.Println("[INFO] Knative Serving is now using Kourier for ingress")
+	return nil
 }
