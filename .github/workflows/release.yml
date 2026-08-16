@@ -16,6 +16,16 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      # Minted from the blanketops-environments GitHub App — used below for
+      # the GitHub Release creation step, which needs to trigger/attribute
+      # differently than the default GITHUB_TOKEN allows.
+      - name: Mint App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: 4215031
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout tag
         uses: actions/checkout@v4
         with:
@@ -108,7 +118,7 @@ jobs:
             bin/bops-env-static.sig
             bin/bops-env-static-arm64.sig
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Release Summary
         run: |
