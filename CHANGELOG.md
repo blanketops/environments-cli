@@ -1,3 +1,15 @@
+## [0.1.6] - 2026-08-16
+
+### 💼 Other
+
+- Merge release/v0.1.6 into main
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.5
+- *(release)* Update changelog for v0.1.5
+- Sync develop with main after release/v0.1.5 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
+- *(ci)* Mint release tokens from the blanketops-environments App instead of GH_PAT (#64)
 ## [0.1.5] - 2026-08-14
 
 ### 🚀 Features
