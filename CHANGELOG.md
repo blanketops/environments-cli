@@ -1,3 +1,14 @@
+## [0.1.7] - 2026-08-20
+
+### 📚 Documentation
+
+- Add missing platform-stack components to README
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.6
+- *(release)* Update changelog for v0.1.6
+- Sync develop with main after release/v0.1.6 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
 ## [0.1.6] - 2026-08-16
 
 ### 💼 Other
