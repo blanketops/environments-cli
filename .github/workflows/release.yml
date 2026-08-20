@@ -21,13 +21,13 @@ jobs:
       # differently than the default GITHUB_TOKEN allows.
       - name: Mint App token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: 4215031
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Checkout tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -77,7 +77,7 @@ jobs:
 
       # 2. Attest build provenance
       - name: Generate Attestations
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             bin/bops-env
@@ -107,7 +107,7 @@ jobs:
 
       # 3. Create Release
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: RELEASE_NOTES.md
           files: |
