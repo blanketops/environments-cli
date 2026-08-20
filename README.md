@@ -97,6 +97,8 @@ The installer deploys a full platform stack:
 | **Shipwright Build**          | Kubernetes-native image builds     |
 | **Crossplane**                | Infrastructure orchestration       |
 | **External Secrets Operator** | Secure secret integration          |
+| **Build Strategies**          | Shipwright ClusterBuildStrategy definitions (kaniko, buildpacks, buildah) |
+| **Flux**                      | GitOps manifest sync                |
 | **Knative Serving**           | Serverless workload runtime        |
 | **Kourier**                   | Knative's ingress/networking layer |
 
