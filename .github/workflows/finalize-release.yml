@@ -19,7 +19,7 @@ jobs:
       # trigger release.yml, which GitHub's default token can't do.
       - name: Mint App token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: 4215031
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
