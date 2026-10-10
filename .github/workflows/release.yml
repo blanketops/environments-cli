@@ -91,17 +91,9 @@ jobs:
           git checkout main
           git pull origin main
 
-      - name: Generate CHANGELOG.md
-        run: git-cliff --config .cliff.toml --output CHANGELOG.md
-
-      - name: Commit changelog
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add CHANGELOG.md
-          git commit -m "chore(release): update changelog for ${{ github.ref_name }}" || echo "No changes"
-          git push origin main
-
+      # CHANGELOG.md is generated and committed by finalize-release.yml, before
+      # the tag is created. This workflow only reads it: it makes no commit of its
+      # own.
       - name: Generate release notes
         run: git-cliff --config .cliff.toml --latest --output RELEASE_NOTES.md
 
