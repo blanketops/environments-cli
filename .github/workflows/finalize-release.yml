@@ -1,6 +1,22 @@
 # Manually-triggered: second step of the release flow. Merges the
 # release/<version> branch into main, tags the release (which triggers
 # release.yml), syncs main back into develop, then deletes the release branch.
+#
+# Verified commits:
+#   Nothing here is committed or pushed with git. A commit made with
+#   `git commit` in a workflow is never verified on GitHub, and a branch that
+#   requires verified signatures refuses it. Merges go through the merges
+#   API (hack/api-merge.sh) and file changes through createCommitOnBranch
+#   (hack/api-commit.sh); GitHub makes and signs those commits itself. The
+#   tag is created through the API too.
+#
+# Tag placement:
+#   The tag is created last on main, after the changelog commit. It used to
+#   be created on the code-docs commit, whose message carries [skip ci];
+#   GitHub then skipped every workflow the tag should have started. Where a
+#   changelog is generated it is rendered for the version with
+#   `git-cliff --tag` before the tag exists.
+
 name: Finalize Release
 on:
   workflow_dispatch:
@@ -12,7 +28,7 @@ permissions:
   contents: write
 jobs:
   finalize:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       # A token minted from the blanketops-environments GitHub App (not the
       # default GITHUB_TOKEN) is required — pushing the tag below must
@@ -30,36 +46,80 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Configure git
+      # The scripts come from the release branch, which is what is being
+      # released. They are copied out of the checkout because the steps below
+      # move it to main, and main does not carry them until this merge lands.
+      - name: Stage the API helpers
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          for script in api-commit.sh api-merge.sh; do
+            git show "origin/release/${VERSION}:hack/${script}" > "${RUNNER_TEMP}/${script}"
+            chmod +x "${RUNNER_TEMP}/${script}"
+          done
 
       - name: Merge release into main
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git checkout main
-          git pull origin main
-          git merge --no-ff origin/release/${{ github.event.inputs.version }} \
-            -m "release: merge release/${{ github.event.inputs.version }} into main"
-          git push origin main
+          "${RUNNER_TEMP}/api-merge.sh" main "release/${VERSION}" \
+            "release: merge release/${VERSION} into main"
 
-      # Pushing this tag is what kicks off release.yml (build, sign, publish).
-      - name: Tag release
+      - name: Install git-cliff
         run: |
-          git tag ${{ github.event.inputs.version }}
-          git push origin ${{ github.event.inputs.version }}
+          GITCLIFF_VERSION="2.13.0"
+          curl -L "https://github.com/orhun/git-cliff/releases/download/v${GITCLIFF_VERSION}/git-cliff-${GITCLIFF_VERSION}-x86_64-unknown-linux-gnu.tar.gz" -o git-cliff.tar.gz
+          tar xzf git-cliff.tar.gz
+          sudo mv "git-cliff-${GITCLIFF_VERSION}/git-cliff" /usr/local/bin/git-cliff
+          rm -rf git-cliff.tar.gz "git-cliff-${GITCLIFF_VERSION}"
+          git-cliff --version
+
+      # --tag renders the commits since the last release under this version:
+      # the tag itself is only created after this file is committed.
+      - name: Generate CHANGELOG.md
+        run: git-cliff --config .cliff.toml --tag "${VERSION}" --output CHANGELOG.md
+
+      - name: Commit changelog
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          "${RUNNER_TEMP}/api-commit.sh" main \
+            "chore(release): update changelog for ${VERSION}" CHANGELOG.md
+
+      # On the changelog commit: a tag on a [skip ci] commit starts no workflow.
+      - name: Tag release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          jq -n --arg ref "refs/tags/${VERSION}" --arg sha "$sha" '{ref: $ref, sha: $sha}' \
+            | curl -sS --fail-with-body -X POST \
+                -H "Authorization: bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                --data-binary @- \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs" >/dev/null
+          echo "Tagged ${sha} as ${VERSION}"
 
       - name: Merge main back into develop
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git checkout develop
-          git pull origin develop
-          git merge --no-ff origin/main \
-            -m "chore: sync develop with main after release/${{ github.event.inputs.version }}"
-          git push origin develop
+          "${RUNNER_TEMP}/api-merge.sh" develop main \
+            "chore: sync develop with main after release/${VERSION}"
 
+      # A branch rule may forbid deleting release branches. The release is
+      # complete either way, so a refusal is reported, not failed on.
       - name: Delete release branch
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git push origin --delete release/${{ github.event.inputs.version }}
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+            -H "Authorization: bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs/heads/release/${VERSION}")
+          if [ "$status" = 204 ]; then
+            echo "Deleted release/${VERSION}"
+          else
+            echo "::warning::release/${VERSION} was not deleted (HTTP ${status}); a branch rule may protect it"
+          fi
 
       - name: Release Summary
         run: |
