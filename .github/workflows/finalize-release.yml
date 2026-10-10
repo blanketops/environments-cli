@@ -12,7 +12,7 @@ permissions:
   contents: write
 jobs:
   finalize:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       # A token minted from the blanketops-environments GitHub App (not the
       # default GITHUB_TOKEN) is required — pushing the tag below must
