@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       # Minted from the blanketops-environments GitHub App — used below for
       # the GitHub Release creation step, which needs to trigger/attribute
