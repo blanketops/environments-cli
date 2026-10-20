@@ -35,7 +35,9 @@ permissions:
 jobs:
   godoc:
     name: Generate Code Docs
-    runs-on: ubuntu-latest
+    # Zenith self-hosted pool. GitHub-hosted jobs do not start: the account
+    # is locked for hosted runners (billing).
+    runs-on: self-hosted
     steps:
       - name: Generate GitHub App token
         id: app-token
