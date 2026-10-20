@@ -67,14 +67,16 @@ jobs:
       - name: Run govulncheck (SARIF)
         run: govulncheck -format sarif ./... > govulncheck.raw.sarif || true
 
-      # govulncheck (as of v1.6.0) sometimes emits duplicate entries in a
-      # rule's properties.tags array, which fails GitHub's strict SARIF
-      # schema validation on upload. Dedupe before uploading rather than
-      # patching govulncheck itself.
+      # govulncheck emits duplicate entries in a rule's properties.tags and
+      # in a result's stacks, which fails GitHub's strict SARIF schema
+      # validation on upload ("stacks contains duplicate item"). Dedupe both
+      # before uploading rather than patching govulncheck itself.
       - name: Sanitize SARIF
         run: |
-          jq 'walk(if type == "object" and has("tags") and (.tags | type) == "array"
-                   then .tags |= unique else . end)' \
+          jq 'walk(if type == "object" then
+                     (if (.tags | type) == "array" then .tags |= unique else . end)
+                     | (if (.stacks | type) == "array" then .stacks |= unique else . end)
+                   else . end)' \
             govulncheck.raw.sarif > govulncheck.sarif
 
       - name: Upload SARIF to Security tab
