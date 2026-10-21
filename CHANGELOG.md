@@ -1,3 +1,45 @@
+## [0.1.9] - 2026-10-21
+
+### 🐛 Bug Fixes
+
+- Make main build again and govulncheck upload clean (#91)
+- Use the verbatim Apache-2.0 license text (#99)
+- *(release)* Set VERSION for the finalize job
+- *(release)* Set VERSION for the finalize job (#104)
+
+### 💼 Other
+
+- Merge release/v0.1.9 into main
+
+### 📚 Documentation
+
+- Add generated code docs and code-docs CI job (#69)
+- Auto-generate code documentation [skip ci] (#101)
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.8
+- Run every job on the self-hosted runners (#83)
+- *(release)* Make the workflows' commits verified (#82)
+- *(ci)* Bump github/codeql-action from 4.37.4 to 4.38.2 (#81)
+- *(ci)* Bump github/codeql-action from 4.38.2 to 4.39.0 (#88)
+- *(ci)* Bump actions/setup-go from 6 to 7 (#87)
+- Sync develop with main (#96)
+- *(release)* Update changelog for v0.1.8
+- Do not fail a job when the artifact upload is refused (#89)
+- Turn off setup-go's cache on the self-hosted runners (#90)
+- *(code-docs)* Run on the self-hosted runners (#92)
+- *(dependabot)* Open dependency PRs against main
+- *(dependabot)* Open dependency PRs against main (#93)
+- *(ci)* Bump github/codeql-action from 4.38.2 to 4.39.0 (#94)
+- *(ci)* Bump actions/setup-go from 6 to 7 (#95)
+- Sync develop with main
+- Sync develop with main (#97)
+- Bring develop into main (#98)
+- Land bot writes to main through pull requests
+- Land bot writes to main through pull requests (#100)
+- Sync develop with main
+- Sync develop with main (#102)
 ## [0.1.8] - 2026-08-20
 
 ### 🐛 Bug Fixes
