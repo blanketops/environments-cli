@@ -66,7 +66,7 @@ var Assets embed.FS
 ```
 
 <a name="ApplyEmbeddedDir"></a>
-## func [ApplyEmbeddedDir](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependencies.go#L109>)
+## func ApplyEmbeddedDir
 
 ```go
 func ApplyEmbeddedDir(path string) error
@@ -75,7 +75,7 @@ func ApplyEmbeddedDir(path string) error
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- ApplyEmbeddedDir \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="ApplyFromURL"></a>
-## func [ApplyFromURL](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependencies.go#L72>)
+## func ApplyFromURL
 
 ```go
 func ApplyFromURL(url string) error
@@ -84,7 +84,7 @@ func ApplyFromURL(url string) error
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- ApplyFromURL \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="ApplyRawYAML"></a>
-## func [ApplyRawYAML](<https://github.com/blanketops/environments-cli/blob/main/cmd/apply.go#L36>)
+## func ApplyRawYAML
 
 ```go
 func ApplyRawYAML(dc dynamic.Interface, mapper meta.RESTMapper, data []byte) error
@@ -93,7 +93,7 @@ func ApplyRawYAML(dc dynamic.Interface, mapper meta.RESTMapper, data []byte) err
 ApplyRawYAML applies raw YAML text using robustApply
 
 <a name="BuildConfig"></a>
-## func [BuildConfig](<https://github.com/blanketops/environments-cli/blob/main/cmd/kube.go#L36>)
+## func BuildConfig
 
 ```go
 func BuildConfig() (*rest.Config, error)
@@ -102,7 +102,7 @@ func BuildConfig() (*rest.Config, error)
 BuildConfig loads kubeconfig in order: KUBECONFIG, $HOME/.kube/config, in\-cluster.
 
 <a name="ClusterDown"></a>
-## func [ClusterDown](<https://github.com/blanketops/environments-cli/blob/main/cmd/all.go#L160>)
+## func ClusterDown
 
 ```go
 func ClusterDown(name string) error
@@ -111,7 +111,7 @@ func ClusterDown(name string) error
 ClusterDown deletes the named cluster.
 
 <a name="ClusterExists"></a>
-## func [ClusterExists](<https://github.com/blanketops/environments-cli/blob/main/cmd/cluster.go#L74>)
+## func ClusterExists
 
 ```go
 func ClusterExists(name string) (bool, error)
@@ -120,7 +120,7 @@ func ClusterExists(name string) (bool, error)
 ClusterExists checks if a Kind cluster exists.
 
 <a name="ClusterStatus"></a>
-## func [ClusterStatus](<https://github.com/blanketops/environments-cli/blob/main/cmd/all.go#L165>)
+## func ClusterStatus
 
 ```go
 func ClusterStatus(name string) error
@@ -129,7 +129,7 @@ func ClusterStatus(name string) error
 ClusterStatus reports whether the named cluster exists.
 
 <a name="ClusterUp"></a>
-## func [ClusterUp](<https://github.com/blanketops/environments-cli/blob/main/cmd/all.go#L155>)
+## func ClusterUp
 
 ```go
 func ClusterUp(name string) error
@@ -138,7 +138,7 @@ func ClusterUp(name string) error
 ClusterUp ensures the named cluster exists and is ready.
 
 <a name="CreateCluster"></a>
-## func [CreateCluster](<https://github.com/blanketops/environments-cli/blob/main/cmd/cluster.go#L53>)
+## func CreateCluster
 
 ```go
 func CreateCluster(name string) error
@@ -147,7 +147,7 @@ func CreateCluster(name string) error
 CreateCluster creates a Kind cluster.
 
 <a name="CurrentContext"></a>
-## func [CurrentContext](<https://github.com/blanketops/environments-cli/blob/main/cmd/kube.go#L64>)
+## func CurrentContext
 
 ```go
 func CurrentContext() string
@@ -156,7 +156,7 @@ func CurrentContext() string
 CurrentContext returns the human\-readable name of the cluster bops\-env would currently target, following the same kubeconfig precedence as BuildConfig. Used only for display \(banner\), never for connecting.
 
 <a name="DeleteCluster"></a>
-## func [DeleteCluster](<https://github.com/blanketops/environments-cli/blob/main/cmd/cluster.go#L66>)
+## func DeleteCluster
 
 ```go
 func DeleteCluster(name string) error
@@ -165,7 +165,7 @@ func DeleteCluster(name string) error
 DeleteCluster deletes a Kind cluster.
 
 <a name="DependenciesInstall"></a>
-## func [DependenciesInstall](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependencies.go#L36>)
+## func DependenciesInstall
 
 ```go
 func DependenciesInstall(paths []string) error
@@ -174,7 +174,7 @@ func DependenciesInstall(paths []string) error
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- DependenciesInstall \(uses embedded assets\) \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="DependencyNames"></a>
-## func [DependencyNames](<https://github.com/blanketops/environments-cli/blob/main/cmd/registry.go#L200>)
+## func DependencyNames
 
 ```go
 func DependencyNames() []string
@@ -183,7 +183,7 @@ func DependencyNames() []string
 DependencyNames returns the registered dependency names in registry order.
 
 <a name="EnsureCluster"></a>
-## func [EnsureCluster](<https://github.com/blanketops/environments-cli/blob/main/cmd/cluster.go#L33>)
+## func EnsureCluster
 
 ```go
 func EnsureCluster(name string) error
@@ -192,7 +192,7 @@ func EnsureCluster(name string) error
 EnsureCluster ensures a Kubernetes cluster exists and is ready. For MVP, this is Kind\-only.
 
 <a name="InstallAll"></a>
-## func [InstallAll](<https://github.com/blanketops/environments-cli/blob/main/cmd/all.go#L41>)
+## func InstallAll
 
 ```go
 func InstallAll() error
@@ -205,7 +205,7 @@ This restores the last version of this sequence that existed before a refactor r
 calico and multus are intentionally absent: calico is currently breaking installs, and dependencies/multus/multus.yaml is \(and always has been\) an empty stub with nothing to apply.
 
 <a name="InstallDependency"></a>
-## func [InstallDependency](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependency_crud.go#L42>)
+## func InstallDependency
 
 ```go
 func InstallDependency(name string) error
@@ -214,7 +214,7 @@ func InstallDependency(name string) error
 InstallDependency installs \(or, since the underlying apply is create\-or\-update, re\-applies/updates\) a single named dependency.
 
 <a name="InstallFluxCRDs"></a>
-## func [InstallFluxCRDs](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependencies.go#L152>)
+## func InstallFluxCRDs
 
 ```go
 func InstallFluxCRDs() error
@@ -223,7 +223,7 @@ func InstallFluxCRDs() error
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- Flux CRDs \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="InstallOperator"></a>
-## func [InstallOperator](<https://github.com/blanketops/environments-cli/blob/main/cmd/operator.go#L41>)
+## func InstallOperator
 
 ```go
 func InstallOperator() error
@@ -232,7 +232,7 @@ func InstallOperator() error
 InstallOperator applies the latest published operator bundle \(CRDs, RBAC, controller\-manager Deployment\) to the current kube context. The CLI and the operator it drives are versioned and released independently — this doesn't touch the bops\-env binary itself.
 
 <a name="ListDependencies"></a>
-## func [ListDependencies](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependency_crud.go#L34>)
+## func ListDependencies
 
 ```go
 func ListDependencies()
@@ -241,7 +241,7 @@ func ListDependencies()
 ListDependencies prints every dependency this CLI can address individually, one per line.
 
 <a name="NewDynamicClient"></a>
-## func [NewDynamicClient](<https://github.com/blanketops/environments-cli/blob/main/cmd/kube.go#L89>)
+## func NewDynamicClient
 
 ```go
 func NewDynamicClient() (dynamic.Interface, *rest.Config, error)
@@ -250,7 +250,7 @@ func NewDynamicClient() (dynamic.Interface, *rest.Config, error)
 NewDynamicClient returns a dynamic client and associated rest.Config.
 
 <a name="NewRESTMapper"></a>
-## func [NewRESTMapper](<https://github.com/blanketops/environments-cli/blob/main/cmd/kube.go#L102>)
+## func NewRESTMapper
 
 ```go
 func NewRESTMapper(cfg *rest.Config) (meta.RESTMapper, error)
@@ -259,7 +259,7 @@ func NewRESTMapper(cfg *rest.Config) (meta.RESTMapper, error)
 NewRESTMapper builds a discovery\-backed RESTMapper using the provided rest.Config.
 
 <a name="NewRESTMapperPointerFor"></a>
-## func [NewRESTMapperPointerFor](<https://github.com/blanketops/environments-cli/blob/main/cmd/kube.go#L119>)
+## func NewRESTMapperPointerFor
 
 ```go
 func NewRESTMapperPointerFor(dc dynamic.Interface) (meta.RESTMapper, error)
@@ -268,7 +268,7 @@ func NewRESTMapperPointerFor(dc dynamic.Interface) (meta.RESTMapper, error)
 NewRESTMapperPointerFor builds a restmapper backed by discovery; returned mapper is meta.RESTMapper.
 
 <a name="RunKnativeKourierSetup"></a>
-## func [RunKnativeKourierSetup](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependencies.go#L169>)
+## func RunKnativeKourierSetup
 
 ```go
 func RunKnativeKourierSetup() error
@@ -277,7 +277,7 @@ func RunKnativeKourierSetup() error
 
 
 <a name="RunUninstallScripts"></a>
-## func [RunUninstallScripts](<https://github.com/blanketops/environments-cli/blob/main/cmd/uninstall_cluster.go#L29>)
+## func RunUninstallScripts
 
 ```go
 func RunUninstallScripts() error
@@ -286,7 +286,7 @@ func RunUninstallScripts() error
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- RunUninstallScripts \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="SelfInstall"></a>
-## func [SelfInstall](<https://github.com/blanketops/environments-cli/blob/main/cmd/selfinstall.go#L103>)
+## func SelfInstall
 
 ```go
 func SelfInstall() error
@@ -295,7 +295,7 @@ func SelfInstall() error
 SelfInstall fetches, verifies, and installs the latest bops\-env release.
 
 <a name="SelfUninstall"></a>
-## func [SelfUninstall](<https://github.com/blanketops/environments-cli/blob/main/cmd/selfinstall.go#L220>)
+## func SelfUninstall
 
 ```go
 func SelfUninstall() error
@@ -304,7 +304,7 @@ func SelfUninstall() error
 SelfUninstall removes a self\-installed bops\-env binary from either of the locations installBinary might have used.
 
 <a name="StatusAll"></a>
-## func [StatusAll](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependency_crud.go#L93>)
+## func StatusAll
 
 ```go
 func StatusAll() error
@@ -313,7 +313,7 @@ func StatusAll() error
 StatusAll reports the status of every registered dependency, reusing a single client for all of them rather than dialing the cluster per entry.
 
 <a name="StatusDependency"></a>
-## func [StatusDependency](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependency_crud.go#L74>)
+## func StatusDependency
 
 ```go
 func StatusDependency(name string) error
@@ -322,7 +322,7 @@ func StatusDependency(name string) error
 StatusDependency reports whether a single named dependency looks installed, based on its namespace existing on the cluster. This is a coarse signal \(a namespace can exist with a partially\-failed install\), not a full health check.
 
 <a name="UninstallAll"></a>
-## func [UninstallAll](<https://github.com/blanketops/environments-cli/blob/main/cmd/all.go#L139>)
+## func UninstallAll
 
 ```go
 func UninstallAll(paths []string) error
@@ -331,7 +331,7 @@ func UninstallAll(paths []string) error
 UninstallAll tears down the platform stack in the mirror order of InstallAll: Helm/script\-installed pieces first \(RunUninstallScripts\), then the plain embedded manifests \(UninstallManifests\), then whatever cluster\-wide RBAC/CRDs/namespaces are left over \(UninstallClusterResources\).
 
 <a name="UninstallClusterResources"></a>
-## func [UninstallClusterResources](<https://github.com/blanketops/environments-cli/blob/main/cmd/uninstall_cluster.go#L39>)
+## func UninstallClusterResources
 
 ```go
 func UninstallClusterResources() error
@@ -340,7 +340,7 @@ func UninstallClusterResources() error
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- Cluster\-wide cleanup \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="UninstallDependency"></a>
-## func [UninstallDependency](<https://github.com/blanketops/environments-cli/blob/main/cmd/dependency_crud.go#L55>)
+## func UninstallDependency
 
 ```go
 func UninstallDependency(name string) error
@@ -349,7 +349,7 @@ func UninstallDependency(name string) error
 UninstallDependency removes a single named dependency's resources.
 
 <a name="UninstallManifests"></a>
-## func [UninstallManifests](<https://github.com/blanketops/environments-cli/blob/main/cmd/uninstall.go#L32>)
+## func UninstallManifests
 
 ```go
 func UninstallManifests(manifestPaths []string) error
@@ -358,7 +358,7 @@ func UninstallManifests(manifestPaths []string) error
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- UninstallManifests \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="UninstallOperator"></a>
-## func [UninstallOperator](<https://github.com/blanketops/environments-cli/blob/main/cmd/operator.go#L50>)
+## func UninstallOperator
 
 ```go
 func UninstallOperator() error
@@ -367,7 +367,7 @@ func UninstallOperator() error
 UninstallOperator removes the operator bundle applied by InstallOperator. It re\-fetches the same installer YAML and deletes each object it declares, mirroring UninstallManifests but sourced from the release URL instead of an embedded path.
 
 <a name="WaitForAllNodesReady"></a>
-## func [WaitForAllNodesReady](<https://github.com/blanketops/environments-cli/blob/main/cmd/wait.go#L123>)
+## func WaitForAllNodesReady
 
 ```go
 func WaitForAllNodesReady() error
@@ -376,7 +376,7 @@ func WaitForAllNodesReady() error
 WaitForAllNodesReady waits until all nodes are Ready.
 
 <a name="WaitForDaemonSetReady"></a>
-## func [WaitForDaemonSetReady](<https://github.com/blanketops/environments-cli/blob/main/cmd/wait.go#L35>)
+## func WaitForDaemonSetReady
 
 ```go
 func WaitForDaemonSetReady(namespace, name string) error
@@ -385,7 +385,7 @@ func WaitForDaemonSetReady(namespace, name string) error
 WaitForDaemonSetReady waits until a daemonset has the desired number of ready pods.
 
 <a name="WaitForDeploymentReady"></a>
-## func [WaitForDeploymentReady](<https://github.com/blanketops/environments-cli/blob/main/cmd/wait.go#L77>)
+## func WaitForDeploymentReady
 
 ```go
 func WaitForDeploymentReady(namespace, name string) error
@@ -394,7 +394,7 @@ func WaitForDeploymentReady(namespace, name string) error
 WaitForDeploymentReady waits until the named deployment reports all replicas ready.
 
 <a name="Dependency"></a>
-## type [Dependency](<https://github.com/blanketops/environments-cli/blob/main/cmd/registry.go#L46-L60>)
+## type Dependency
 
 Dependency describes one individually addressable piece of the platform stack: its embedded manifests \(if any\), how to probe its install status, and — where "apply the manifests" or "delete the manifests" isn't the whole story \(Helm\-installed components, webhook cert setup, remote CRD fetches\) — install/uninstall overrides.
 
@@ -419,7 +419,7 @@ type Dependency struct {
 ```
 
 <a name="FindDependency"></a>
-### func [FindDependency](<https://github.com/blanketops/environments-cli/blob/main/cmd/registry.go#L190>)
+### func FindDependency
 
 ```go
 func FindDependency(name string) (*Dependency, error)
