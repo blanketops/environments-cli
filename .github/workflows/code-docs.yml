@@ -35,7 +35,9 @@ permissions:
 jobs:
   godoc:
     name: Generate Code Docs
-    runs-on: ubuntu-latest
+    # Zenith self-hosted pool. GitHub-hosted jobs do not start: the account
+    # is locked for hosted runners (billing).
+    runs-on: self-hosted
     steps:
       - name: Generate GitHub App token
         id: app-token
@@ -53,7 +55,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: false
@@ -86,6 +88,7 @@ jobs:
 
       - name: Upload docs artifact
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: godoc-${{ github.sha }}
           path: docs/code/

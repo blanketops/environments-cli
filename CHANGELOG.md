@@ -1,3 +1,24 @@
+## [0.1.8] - 2026-08-20
+
+### 🐛 Bug Fixes
+
+- *(templates)* Move issue templates to the path GitHub actually reads
+- *(templates)* Remove Contract Change issue type -- doesn't belong here
+
+### 💼 Other
+
+- Merge release/v0.1.8 into main
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Update changelog for v0.1.7
+- *(ci)* Bump actions/create-github-app-token from 2 to 3 (#67)
+- *(ci)* Bump actions/attest-build-provenance from 2 to 4 (#56)
+- *(ci)* Bump softprops/action-gh-release from 2 to 3 (#57)
+- *(ci)* Bump actions/checkout from 4 to 7 (#58)
+- *(ci)* Bump github/codeql-action from 4 to 4.37.4 (#61)
+- *(ci)* Bump actions/create-github-app-token from 2 to 3 (#67)
+- Bring issue/PR template fixes into main
 ## [0.1.7] - 2026-08-20
 
 ### 📚 Documentation
