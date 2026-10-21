@@ -17,7 +17,7 @@ Package scripts holds the environment setup/teardown routines that used to ship 
 
 
 <a name="InstallCrossplane"></a>
-## func [InstallCrossplane](<https://github.com/blanketops/environments-cli/blob/main/scripts/install-crossplane.go#L25>)
+## func InstallCrossplane
 
 ```go
 func InstallCrossplane() error
@@ -28,7 +28,7 @@ InstallCrossplane installs Crossplane via Helm.
 Honours the same env vars as the original script: NAMESPACE, RELEASE, VERSION, TIMEOUT. VERSION=latest \(any case\) resolves to the chart's newest release rather than a literal "latest".
 
 <a name="InstallExternalSecrets"></a>
-## func [InstallExternalSecrets](<https://github.com/blanketops/environments-cli/blob/main/scripts/install-externalsecrets.go#L30>)
+## func InstallExternalSecrets
 
 ```go
 func InstallExternalSecrets() error
@@ -39,7 +39,7 @@ InstallExternalSecrets installs External Secrets via Helm.
 Honours the same env vars as the original script: NAMESPACE, RELEASE, REPO\_NAME, REPO\_URL, CHART, TIMEOUT. The chart version is resolved from \`helm search repo \-o json\` decoded with encoding/json, so there is no jq dependency.
 
 <a name="SetupShipwrightCert"></a>
-## func [SetupShipwrightCert](<https://github.com/blanketops/environments-cli/blob/main/scripts/setup-shipwright-cert.go#L62>)
+## func SetupShipwrightCert
 
 ```go
 func SetupShipwrightCert() error
@@ -50,7 +50,7 @@ SetupShipwrightCert issues a serving cert for the Shipwright Build webhook and p
 The original bash script shelled out to openssl \(to build the key/CSR\) and jq \+ base64 \(to read the signed cert back and encode the CA bundle\). openssl isn't on Windows by default, and macOS's BSD base64 takes different flags than Linux's GNU base64 — both real cross\-platform footguns. Here the key pair and CSR are generated with Go's crypto/x509 library and base64/JSON use encoding/base64 \+ encoding/json, so the only external dependency left is kubectl.
 
 <a name="SilenceFinalizers"></a>
-## func [SilenceFinalizers](<https://github.com/blanketops/environments-cli/blob/main/scripts/silence-all-finalizers.go#L71>)
+## func SilenceFinalizers
 
 ```go
 func SilenceFinalizers() error

@@ -16,7 +16,7 @@ import "github.com/blanketops/environments-cli/util"
 
 
 <a name="Spinner"></a>
-## type [Spinner](<https://github.com/blanketops/environments-cli/blob/main/util/progress.go#L43-L50>)
+## type Spinner
 
 Spinner renders a single, self\-overwriting status line in place of a scroll of per\-resource log lines, collapsing to one ✔/❌ line once the step finishes. On a non\-terminal it degrades to plain "label: text" lines with no animation or overwriting.
 
@@ -27,7 +27,7 @@ type Spinner struct {
 ```
 
 <a name="NewSpinner"></a>
-### func [NewSpinner](<https://github.com/blanketops/environments-cli/blob/main/util/progress.go#L55>)
+### func NewSpinner
 
 ```go
 func NewSpinner(label string) *Spinner
@@ -36,7 +36,7 @@ func NewSpinner(label string) *Spinner
 NewSpinner starts a spinner for the given step label \(e.g. a manifest path\). Call Update as work progresses within the step, then Done or Fail exactly once to stop it and print the final line.
 
 <a name="Spinner.Done"></a>
-### func \(\*Spinner\) [Done](<https://github.com/blanketops/environments-cli/blob/main/util/progress.go#L110>)
+### func \(\*Spinner\) Done
 
 ```go
 func (s *Spinner) Done(msg string)
@@ -45,7 +45,7 @@ func (s *Spinner) Done(msg string)
 Done stops the spinner and prints a final ✔ line for this step.
 
 <a name="Spinner.Fail"></a>
-### func \(\*Spinner\) [Fail](<https://github.com/blanketops/environments-cli/blob/main/util/progress.go#L123>)
+### func \(\*Spinner\) Fail
 
 ```go
 func (s *Spinner) Fail(err error)
@@ -54,7 +54,7 @@ func (s *Spinner) Fail(err error)
 Fail stops the spinner and prints a final ❌ line for this step.
 
 <a name="Spinner.Update"></a>
-### func \(\*Spinner\) [Update](<https://github.com/blanketops/environments-cli/blob/main/util/progress.go#L87>)
+### func \(\*Spinner\) Update
 
 ```go
 func (s *Spinner) Update(text string)
