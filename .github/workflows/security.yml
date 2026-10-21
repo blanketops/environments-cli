@@ -52,7 +52,11 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
+          # The self-hosted runners keep Go's module and build caches on a
+          # persistent volume. setup-go's own cache would upload them again
+          # after every job, which on these runners hangs "Post Setup Go" for
+          # up to an hour and holds the runner.
+          cache: false
 
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -67,18 +71,20 @@ jobs:
       - name: Run govulncheck (SARIF)
         run: govulncheck -format sarif ./... > govulncheck.raw.sarif || true
 
-      # govulncheck (as of v1.6.0) sometimes emits duplicate entries in a
-      # rule's properties.tags array, which fails GitHub's strict SARIF
-      # schema validation on upload. Dedupe before uploading rather than
-      # patching govulncheck itself.
+      # govulncheck emits duplicate entries in a rule's properties.tags and
+      # in a result's stacks, which fails GitHub's strict SARIF schema
+      # validation on upload ("stacks contains duplicate item"). Dedupe both
+      # before uploading rather than patching govulncheck itself.
       - name: Sanitize SARIF
         run: |
-          jq 'walk(if type == "object" and has("tags") and (.tags | type) == "array"
-                   then .tags |= unique else . end)' \
+          jq 'walk(if type == "object" then
+                     (if (.tags | type) == "array" then .tags |= unique else . end)
+                     | (if (.stacks | type) == "array" then .stacks |= unique else . end)
+                   else . end)' \
             govulncheck.raw.sarif > govulncheck.sarif
 
       - name: Upload SARIF to Security tab
-        uses: github/codeql-action/upload-sarif@v4.39.0
+        uses: github/codeql-action/upload-sarif@v4.38.2
         with:
           sarif_file: govulncheck.sarif
           category: govulncheck
