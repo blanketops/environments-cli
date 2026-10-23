@@ -133,3 +133,17 @@ jobs:
           - **Sig:** \`cosign verify-blob --certificate-identity-regexp ".*" --cert-oidc-issuer "https://token.actions.githubusercontent.com" --signature bin/bops-env-static.sig bin/bops-env-static\`
           - **Attest:** \`gh attest verify bin/bops-env-static --owner ${{ github.repository_owner }}\`
           EOF
+
+      # The releaser (blanketops/environments-bots, as the Releaser App)
+      # attaches the tag and the published release to the Release issue,
+      # closes it and sets it to Done. It runs even when a step above
+      # failed: it then finds no published release, says so on the issue,
+      # and leaves it open.
+      - name: Releaser complete
+        if: always()
+        uses: blanketops/environments-bots/.github/actions/releaser@v0.0.2
+        with:
+          command: complete
+          release: ${{ github.ref_name }}
+          app-id: ${{ secrets.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
