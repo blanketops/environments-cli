@@ -1,3 +1,113 @@
+## [0.1.9] - 2026-10-21
+
+### 🐛 Bug Fixes
+
+- Make main build again and govulncheck upload clean (#91)
+- Use the verbatim Apache-2.0 license text (#99)
+- *(release)* Set VERSION for the finalize job
+- *(release)* Set VERSION for the finalize job (#104)
+
+### 💼 Other
+
+- Merge release/v0.1.9 into main
+
+### 📚 Documentation
+
+- Add generated code docs and code-docs CI job (#69)
+- Auto-generate code documentation [skip ci] (#101)
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.8
+- Run every job on the self-hosted runners (#83)
+- *(release)* Make the workflows' commits verified (#82)
+- *(ci)* Bump github/codeql-action from 4.37.4 to 4.38.2 (#81)
+- *(ci)* Bump github/codeql-action from 4.38.2 to 4.39.0 (#88)
+- *(ci)* Bump actions/setup-go from 6 to 7 (#87)
+- Sync develop with main (#96)
+- *(release)* Update changelog for v0.1.8
+- Do not fail a job when the artifact upload is refused (#89)
+- Turn off setup-go's cache on the self-hosted runners (#90)
+- *(code-docs)* Run on the self-hosted runners (#92)
+- *(dependabot)* Open dependency PRs against main
+- *(dependabot)* Open dependency PRs against main (#93)
+- *(ci)* Bump github/codeql-action from 4.38.2 to 4.39.0 (#94)
+- *(ci)* Bump actions/setup-go from 6 to 7 (#95)
+- Sync develop with main
+- Sync develop with main (#97)
+- Bring develop into main (#98)
+- Land bot writes to main through pull requests
+- Land bot writes to main through pull requests (#100)
+- Sync develop with main
+- Sync develop with main (#102)
+## [0.1.8] - 2026-08-20
+
+### 🐛 Bug Fixes
+
+- *(templates)* Move issue templates to the path GitHub actually reads
+- *(templates)* Remove Contract Change issue type -- doesn't belong here
+
+### 💼 Other
+
+- Merge release/v0.1.8 into main
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Update changelog for v0.1.7
+- *(ci)* Bump actions/create-github-app-token from 2 to 3 (#67)
+- *(ci)* Bump actions/attest-build-provenance from 2 to 4 (#56)
+- *(ci)* Bump softprops/action-gh-release from 2 to 3 (#57)
+- *(ci)* Bump actions/checkout from 4 to 7 (#58)
+- *(ci)* Bump github/codeql-action from 4 to 4.37.4 (#61)
+- *(ci)* Bump actions/create-github-app-token from 2 to 3 (#67)
+- Bring issue/PR template fixes into main
+## [0.1.7] - 2026-08-20
+
+### 📚 Documentation
+
+- Add missing platform-stack components to README
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.6
+- *(release)* Update changelog for v0.1.6
+- Sync develop with main after release/v0.1.6 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
+## [0.1.6] - 2026-08-16
+
+### 💼 Other
+
+- Merge release/v0.1.6 into main
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.5
+- *(release)* Update changelog for v0.1.5
+- Sync develop with main after release/v0.1.5 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
+- *(ci)* Mint release tokens from the blanketops-environments App instead of GH_PAT (#64)
+## [0.1.5] - 2026-08-14
+
+### 🚀 Features
+
+- Support building/installing bops-env on Windows and macOS
+
+### 🐛 Bug Fixes
+
+- *(deps)* Bump golang.org/x/net to v0.55.0 (CVE-2026-25680) (#63)
+
+### 💼 Other
+
+- Merge release/v0.1.5 into main
+
+### 🚜 Refactor
+
+- Make scripts a callable package instead of standalone programs (#62)
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.1.4
+- *(release)* Update changelog for v0.1.4
+- Sync develop with main after release/v0.1.4 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
+- *(ci)* Bump actions/setup-go from 5 to 7 (#55)
 ## [0.1.4] - 2026-07-20
 
 ### 🚀 Features

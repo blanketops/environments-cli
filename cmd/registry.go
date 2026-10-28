@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/blanketops/environments-cli/scripts"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -97,7 +98,7 @@ var registry = []Dependency{
 			// The webhook doesn't work without its TLS certs generated,
 			// approved, and the deployment restarted to pick up the CA
 			// bundle — not optional, see all.go's InstallAll.
-			return RunShipwrightCertSetup()
+			return scripts.SetupShipwrightCert()
 		},
 	},
 	{
@@ -107,7 +108,7 @@ var registry = []Dependency{
 		Namespace:   "crossplane-system",
 		HelmRelease: "crossplane",
 		install: func() error {
-			if err := InstallCrossplane(); err != nil {
+			if err := scripts.InstallCrossplane(); err != nil {
 				return err
 			}
 			// Needs Crossplane core (just installed above) already
@@ -124,7 +125,7 @@ var registry = []Dependency{
 		Description: "External Secrets Operator — secure secret integration",
 		Namespace:   "external-secrets",
 		HelmRelease: "external-secrets",
-		install:     InstallExternalSecrets,
+		install:     scripts.InstallExternalSecrets,
 		uninstall: func() error {
 			return helmUninstall("external-secrets", "external-secrets")
 		},

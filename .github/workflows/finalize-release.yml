@@ -1,6 +1,22 @@
 # Manually-triggered: second step of the release flow. Merges the
 # release/<version> branch into main, tags the release (which triggers
 # release.yml), syncs main back into develop, then deletes the release branch.
+#
+# Verified commits:
+#   Nothing here is committed or pushed with git. A commit made with
+#   `git commit` in a workflow is never verified on GitHub, and a branch that
+#   requires verified signatures refuses it. Merges go through the merges
+#   API (hack/api-merge.sh) and file changes through createCommitOnBranch
+#   (hack/api-commit.sh); GitHub makes and signs those commits itself. The
+#   tag is created through the API too.
+#
+# Tag placement:
+#   The tag is created last on main, after the changelog commit. It used to
+#   be created on the code-docs commit, whose message carries [skip ci];
+#   GitHub then skipped every workflow the tag should have started. Where a
+#   changelog is generated it is rendered for the version with
+#   `git-cliff --tag` before the tag exists.
+
 name: Finalize Release
 on:
   workflow_dispatch:
@@ -12,46 +28,132 @@ permissions:
   contents: write
 jobs:
   finalize:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    # Every step below reads the version from here; without it each
+    # ${VERSION} was empty and the release merge looked for `release/`.
+    env:
+      VERSION: ${{ github.event.inputs.version }}
     steps:
-      # GH_PAT (not the default GITHUB_TOKEN) is required — pushing the tag
-      # below must trigger release.yml, which GitHub's default token can't do.
+      # A token minted from the blanketops-environments GitHub App (not the
+      # default GITHUB_TOKEN) is required — pushing the tag below must
+      # trigger release.yml, which GitHub's default token can't do.
+      - name: Mint App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: 4215031
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
 
-      - name: Configure git
+      # The scripts come from the release branch, which is what is being
+      # released, or from main for one cut before they existed. They are
+      # copied out of the checkout because the steps below move it.
+      #
+      # main's `protect` ruleset takes changes only through a pull request
+      # and the App is not a bypass actor: the release branch is merged
+      # through its pull request (api-merge-pr.sh) and every file change
+      # lands through a pull request of its own (api-pr.sh).
+      - name: Stage the API helpers
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          for script in api-commit.sh api-merge.sh api-merge-pr.sh api-pr.sh; do
+            git show "origin/release/${VERSION}:hack/${script}" > "${RUNNER_TEMP}/${script}" 2>/dev/null \
+              || git show "origin/main:hack/${script}" > "${RUNNER_TEMP}/${script}"
+            chmod +x "${RUNNER_TEMP}/${script}"
+          done
 
+      # The releaser (blanketops/environments-bots, as the Releaser App)
+      # checks before anything is merged: one open Release issue, nothing
+      # still open into release/<version> or in the version's milestone, no
+      # tag yet.
+      - name: Releaser verify
+        uses: blanketops/environments-bots/.github/actions/releaser@v0.0.2
+        with:
+          command: verify
+          release: ${{ github.event.inputs.version }}
+          app-id: ${{ secrets.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
+
+      # A release pull request merged by hand leaves nothing to merge: the
+      # release branch is then not ahead of main, and opening a pull request
+      # for an empty difference fails (HTTP 422). The steps after this one
+      # still run on main as merged.
       - name: Merge release into main
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git checkout main
-          git pull origin main
-          git merge --no-ff origin/release/${{ github.event.inputs.version }} \
-            -m "release: merge release/${{ github.event.inputs.version }} into main"
-          git push origin main
+          ahead=$(curl -sS --fail-with-body \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/compare/main...release/${VERSION}" \
+            | jq -r '.ahead_by')
+          if [ "$ahead" = "0" ]; then
+            echo "::notice::release/${VERSION} is already in main (its pull request was merged); nothing to merge"
+            git fetch --quiet origin main
+            git checkout --quiet --detach origin/main
+            exit 0
+          fi
+          "${RUNNER_TEMP}/api-merge-pr.sh" main "release/${VERSION}" \
+            "release: merge release/${VERSION} into main"
 
-      # Pushing this tag is what kicks off release.yml (build, sign, publish).
-      - name: Tag release
+      # git-cliff is baked into the runner image (zenith-runner-toolchain).
+      - name: git-cliff version
+        run: git-cliff --version
+
+      # --tag renders the commits since the last release under this version:
+      # the tag itself is only created after this file is committed.
+      - name: Generate CHANGELOG.md
+        run: git-cliff --config .cliff.toml --tag "${VERSION}" --output CHANGELOG.md
+
+      - name: Commit changelog
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git tag ${{ github.event.inputs.version }}
-          git push origin ${{ github.event.inputs.version }}
+          "${RUNNER_TEMP}/api-pr.sh" main "release/${VERSION}-changelog" \
+            "chore(release): update changelog for ${VERSION}" CHANGELOG.md
+          git fetch --quiet origin main
+          git checkout --quiet --detach origin/main
+
+      # On the changelog commit: a tag on a [skip ci] commit starts no workflow.
+      - name: Tag release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          jq -n --arg ref "refs/tags/${VERSION}" --arg sha "$sha" '{ref: $ref, sha: $sha}' \
+            | curl -sS --fail-with-body -X POST \
+                -H "Authorization: bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                --data-binary @- \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs" >/dev/null
+          echo "Tagged ${sha} as ${VERSION}"
 
       - name: Merge main back into develop
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git checkout develop
-          git pull origin develop
-          git merge --no-ff origin/main \
-            -m "chore: sync develop with main after release/${{ github.event.inputs.version }}"
-          git push origin develop
+          "${RUNNER_TEMP}/api-merge.sh" develop main \
+            "chore: sync develop with main after release/${VERSION}"
 
+      # A branch rule may forbid deleting release branches. The release is
+      # complete either way, so a refusal is reported, not failed on.
       - name: Delete release branch
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git push origin --delete release/${{ github.event.inputs.version }}
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+            -H "Authorization: bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs/heads/release/${VERSION}")
+          if [ "$status" = 204 ]; then
+            echo "Deleted release/${VERSION}"
+          else
+            echo "::warning::release/${VERSION} was not deleted (HTTP ${status}); a branch rule may protect it"
+          fi
 
       - name: Release Summary
         run: |

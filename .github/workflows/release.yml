@@ -14,18 +14,32 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
+      # Minted from the blanketops-environments GitHub App — used below for
+      # the GitHub Release creation step, which needs to trigger/attribute
+      # differently than the default GITHUB_TOKEN allows.
+      - name: Mint App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: 4215031
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
+          # The self-hosted runners keep Go's module and build caches on a
+          # persistent volume. setup-go's own cache would upload them again
+          # after every job, which on these runners hangs "Post Setup Go" for
+          # up to an hour and holds the runner.
+          cache: false
 
       - name: Install mage
         run: go install github.com/magefile/mage@latest
@@ -67,7 +81,7 @@ jobs:
 
       # 2. Attest build provenance
       - name: Generate Attestations
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             bin/bops-env
@@ -81,23 +95,15 @@ jobs:
           git checkout main
           git pull origin main
 
-      - name: Generate CHANGELOG.md
-        run: git-cliff --config .cliff.toml --output CHANGELOG.md
-
-      - name: Commit changelog
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add CHANGELOG.md
-          git commit -m "chore(release): update changelog for ${{ github.ref_name }}" || echo "No changes"
-          git push origin main
-
+      # CHANGELOG.md is generated and committed by finalize-release.yml, before
+      # the tag is created. This workflow only reads it: it makes no commit of its
+      # own.
       - name: Generate release notes
         run: git-cliff --config .cliff.toml --latest --output RELEASE_NOTES.md
 
       # 3. Create Release
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: RELEASE_NOTES.md
           files: |
@@ -108,7 +114,7 @@ jobs:
             bin/bops-env-static.sig
             bin/bops-env-static-arm64.sig
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Release Summary
         run: |
@@ -127,3 +133,17 @@ jobs:
           - **Sig:** \`cosign verify-blob --certificate-identity-regexp ".*" --cert-oidc-issuer "https://token.actions.githubusercontent.com" --signature bin/bops-env-static.sig bin/bops-env-static\`
           - **Attest:** \`gh attest verify bin/bops-env-static --owner ${{ github.repository_owner }}\`
           EOF
+
+      # The releaser (blanketops/environments-bots, as the Releaser App)
+      # attaches the tag and the published release to the Release issue,
+      # closes it and sets it to Done. It runs even when a step above
+      # failed: it then finds no published release, says so on the issue,
+      # and leaves it open.
+      - name: Releaser complete
+        if: always()
+        uses: blanketops/environments-bots/.github/actions/releaser@v0.0.2
+        with:
+          command: complete
+          release: ${{ github.ref_name }}
+          app-id: ${{ secrets.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}

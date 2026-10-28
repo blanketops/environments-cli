@@ -44,7 +44,7 @@ type ghRelease struct {
 // download failure.
 func releaseAssetName() (string, error) {
 	if runtime.GOOS != "linux" {
-		return "", fmt.Errorf("self-install only supports linux today (running %s)", runtime.GOOS)
+		return "", fmt.Errorf("self-install only supports linux today (running %s) — build from source instead: git clone the repo and run `mage install`", runtime.GOOS)
 	}
 	switch runtime.GOARCH {
 	case "amd64":

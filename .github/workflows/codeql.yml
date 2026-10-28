@@ -19,7 +19,7 @@ on:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       security-events: write
       packages: read
@@ -38,19 +38,23 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
+          # The self-hosted runners keep Go's module and build caches on a
+          # persistent volume. setup-go's own cache would upload them again
+          # after every job, which on these runners hangs "Post Setup Go" for
+          # up to an hour and holds the runner.
+          cache: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@v4.39.0
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@v4.39.0
         with:
           category: "/language:${{ matrix.language }}"
 

@@ -1,4 +1,3 @@
-
 ## What
 
 <!-- One or two sentences. What does this PR change? -->
@@ -7,37 +6,31 @@
 
 <!-- The intent. Link the issue if one exists: Closes #123 -->
 
-## Domain
+## Area
 
 <!-- Mark all that apply -->
 
-* [ ] `environments`
-* [ ] `events`
-* [ ] `sources`
-* [ ] `networks`
-* [ ] `common`
-* [ ] Application / domain layer (no API surface change)
-* [ ] CI / tooling / docs
+* [ ] `bops-env install` / `uninstall` (operator manifests)
+* [ ] `bops-env dependencies` (platform stack)
+* [ ] `bops-env cluster` (Kind lifecycle)
+* [ ] `bops-env self` (self-update)
+* [ ] Embedded manifests (`dependencies/`)
+* [ ] CI / release tooling / docs
 
-## API impact
+## Compatibility
 
-* [ ] No API surface change
-* [ ] `v1alpha1` — free to change
-* [ ] `v1beta1` — backwards-compatible only, deprecations allowed
-* [ ] `v1` — **breaking change** (requires version bump + changelog entry + migration note)
+* [ ] No breaking change to CLI flags/commands
+* [ ] Breaking change — old command/flag removed or renamed (document the migration below)
 
-<!-- If breaking: what breaks, and what must consumers do? -->
+<!-- If breaking: what breaks, and what must users do? -->
 
 ## Checklist
 
-* [ ] `mage verify` passes locally
-* [ ] `buf breaking` reviewed (failures justified above if pre-v1)
-* [ ] Panic-free resolution — no `panic()` calls in resolution or domain layers
-* [ ] Import paths use `gen/go/blanketops/...` for contract types
-* [ ] BlanketOps labels present where required (`environments.blanketops.dev/*`)
-* [ ] Conditions written via `core.SetCondition` at each domain pipeline stage
-* [ ] Events emitted via `core.EventRecorder` for terminal outcomes
-* [ ] ESP-0001 updated if contract semantics changed
+* [ ] `mage vet` and `mage build` pass locally
+* [ ] `mage test` passes
+* [ ] Tested against a real (or Kind) cluster, not just unit tests, if touching install/dependencies logic
+* [ ] `mage static` still builds if touching embedded assets or ldflags
+* [ ] README's command list / usage examples updated if flags or commands changed
 * [ ] Commit messages follow Conventional Commits
 
 ## Notes for reviewer

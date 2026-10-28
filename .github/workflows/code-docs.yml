@@ -1,0 +1,114 @@
+# =============================================================================
+# code-docs.yml — Generated Go Package Docs
+#
+# Runs on every push to main. Generates Go package docs via gomarkdoc and
+# commits them back to docs/code/, plus uploads a retained artifact copy.
+# Mirrors environments', environments-controller's, and environments-api's
+# code-docs.yml.
+#
+# Auth:
+#   Uses the BlanketOps-Environments GitHub App instead of a personal-account
+#   PAT for checkout/push — the default GITHUB_TOKEN can't bypass this repo's
+#   required-status-checks on a direct push to main.
+#
+#   This repo has no blanketops/* module dependencies (it resolves sibling
+#   releases at runtime via .../releases/latest/... URLs, not go.mod pins),
+#   so there is no private-module git config step here.
+#
+#   The generated docs reach main through a pull request that the workflow
+#   opens and squash-merges itself (hack/api-pr.sh): main's `protect` ruleset
+#   takes changes only that way, with verified commits, and GitHub signs both
+#   the API commit and the squash commit.
+#
+# Secrets required:
+#   APP_ID, APP_PRIVATE_KEY — GitHub App credentials
+# =============================================================================
+
+name: Code Docs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+# One docs run at a time: a second one waits instead of racing the first to
+# open a pull request on the same main.
+concurrency:
+  group: code-docs
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  godoc:
+    name: Generate Code Docs
+    # Zenith self-hosted pool. GitHub-hosted jobs do not start: the account
+    # is locked for hosted runners (billing).
+    runs-on: self-hosted
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: blanketops
+          repositories: environments-cli
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install gomarkdoc
+        run: go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
+
+      - name: Generate docs
+        run: |
+          mkdir -p docs/code
+          gomarkdoc \
+            --output 'docs/code/{{.Dir}}.md' \
+            ./...
+
+      # Through a pull request: main's `protect` ruleset takes changes only
+      # through a pull request with verified commits, and the App is not a
+      # bypass actor. hack/api-pr.sh opens one with a commit GitHub signs and
+      # squash-merges it; the skip marker in the message keeps that from
+      # starting workflows, including this one.
+      - name: Commit docs
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          hack/api-pr.sh main "docs/code-${GITHUB_SHA::7}" \
+            "docs: auto-generate code documentation [skip ci]" docs/code/
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v7
+        continue-on-error: true
+        with:
+          name: godoc-${{ github.sha }}
+          path: docs/code/
+          retention-days: 30
+
+      - name: Build summary
+        run: |
+          echo "## 📚 Code Documentation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Generated from commit \`${{ github.sha }}\` on branch \`${{ github.ref_name }}\`." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          files=$(find docs/code -name "*.md" | sort)
+          for f in $files; do
+            pkg=$(basename "$f" .md)
+            echo "- \`${pkg}\`" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 📦 Download artifact \`godoc-${{ github.sha }}\` from the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) to browse all generated docs." >> $GITHUB_STEP_SUMMARY

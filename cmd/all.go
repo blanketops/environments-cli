@@ -16,6 +16,8 @@ package cmd
 
 import (
 	"fmt"
+
+	"github.com/blanketops/environments-cli/scripts"
 )
 
 // InstallAll installs the platform stack in an explicit, dependency-aware
@@ -65,12 +67,12 @@ func InstallAll() error {
 	// Shipwright's webhook needs its TLS certs generated, approved, and
 	// the deployment restarted to pick up the CA bundle — not optional,
 	// the webhook doesn't work without this.
-	if err := RunShipwrightCertSetup(); err != nil {
+	if err := scripts.SetupShipwrightCert(); err != nil {
 		return fmt.Errorf("shipwright cert setup failed: %w", err)
 	}
 
 	fmt.Println("📦 Installing Crossplane...")
-	if err := InstallCrossplane(); err != nil {
+	if err := scripts.InstallCrossplane(); err != nil {
 		return fmt.Errorf("crossplane setup failed: %w", err)
 	}
 
@@ -82,7 +84,7 @@ func InstallAll() error {
 	}
 
 	fmt.Println("📦 Installing External Secrets...")
-	if err := InstallExternalSecrets(); err != nil {
+	if err := scripts.InstallExternalSecrets(); err != nil {
 		return fmt.Errorf("externalsecrets setup failed: %w", err)
 	}
 
