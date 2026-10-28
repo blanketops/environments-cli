@@ -15,6 +15,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -43,7 +44,7 @@ var uninstallPaths = []string{
 
 // version is stamped at build time via -ldflags "-X main.version=...";
 // see magefile.go's ldflags() and release.yml's VERSION export.
-var version = "dev"
+var version = "latest"
 
 const asciiBanner = ` ____     ___    ____    ____            _____   _   _  __     __
 | __ )   / _ \  |  _ \  / ___|          | ____| | \ | | \ \   / /
@@ -90,7 +91,124 @@ var usageEntries = [][]usageEntry{
 		{"bops-env cluster down [name]", "Delete the named cluster"},
 		{"bops-env cluster status [name]", "Show whether the named cluster is up"},
 	},
+	{
+		{"bops-env secrets bootstrap <provider> [args...]", "Bootstrap BlanketOps secrets into a secret store (aws, azure, gcp, vault)"},
+		{"bops-env secrets verify <provider> [args...]", "Verify bootstrapped secrets exist in a secret store"},
+	},
 }
+
+const (
+	helpInstall = `Install the BlanketOps Environments operator (CRDs, RBAC, controller-manager).
+
+Usage:
+  bops-env install
+
+This applies the operator manifests from the environments-install repository.
+The operator manages Environment custom resources and reconciles builds, deployments,
+and secrets.
+
+Examples:
+  bops-env install
+`
+
+	helpUninstall = `Remove the BlanketOps Environments operator.
+
+Usage:
+  bops-env uninstall
+
+This removes the operator Deployment, CRDs, RBAC, and associated resources.
+
+Examples:
+  bops-env uninstall
+`
+
+	helpSelf = `Manage the bops-env CLI binary itself.
+
+Usage:
+  bops-env self <command>
+
+Commands:
+  install    Fetch and install the latest bops-env CLI binary from GitHub releases
+  uninstall  Remove a self-installed bops-env CLI binary
+
+Examples:
+  bops-env self install
+  bops-env self uninstall
+`
+
+	helpDependencies = `Manage the platform stack dependencies (Carvel, Argo Events, Tekton, Shipwright, etc.).
+
+Usage:
+  bops-env dependencies <command> [name]
+
+Commands:
+  list       List all individually addressable dependencies
+  install    Install the full platform stack, or a specific dependency by name
+  uninstall  Remove the full platform stack, or a specific dependency by name
+  status     Show install status for all dependencies, or just [name]
+
+Dependency names (use with install/uninstall/status):
+  carvel, argoevents, tekton, tekton-dashboard, shipwright, crossplane,
+  crossplane-provider, externalsecrets, vault, flux, flux-crds, flux-ui,
+  buildpacks, kaniko, buildah, knative, kourier, knative-kourier-setup
+
+Examples:
+  bops-env dependencies list
+  bops-env dependencies install
+  bops-env dependencies install tekton
+  bops-env dependencies status flux
+  bops-env dependencies uninstall vault
+`
+
+	helpCluster = `Manage kind clusters for local development.
+
+Usage:
+  bops-env cluster <command> [name]
+
+Commands:
+  up      Create the named cluster if it doesn't exist
+  down    Delete the named cluster
+  status  Show whether the named cluster exists
+
+Examples:
+  bops-env cluster up
+  bops-env cluster up my-cluster
+  bops-env cluster status
+  bops-env cluster down
+`
+
+	helpSecrets = `Bootstrap and verify BlanketOps secrets in external secret stores.
+
+Usage:
+  bops-env secrets <command> <provider> [args...]
+
+Commands:
+  bootstrap  Create all required BlanketOps secrets in the provider
+  verify     List and verify existing BlanketOps secrets in the provider
+
+Providers:
+  aws     AWS Secrets Manager
+          Args: <region> [path-prefix]
+          Example: bops-env secrets bootstrap aws us-east-1 /blanketops
+  
+  azure     Azure Key Vault
+          Args: <vault-url>
+          Example: bops-env secrets bootstrap azure https://myvault.vault.azure.net
+  
+  gcp       Google Cloud Secret Manager
+          Args: <project-id>
+          Example: bops-env secrets bootstrap gcp my-gcp-project
+  
+  vault     HashiCorp Vault (KV v2)
+          Args: <addr> <token> [mount]
+          Example: bops-env secrets bootstrap vault http://vault:8200 root secret
+
+Examples:
+  bops-env secrets bootstrap aws us-east-1
+  bops-env secrets verify gcp my-project
+  bops-env secrets bootstrap vault http://localhost:8200 mytoken secret
+`
+)
 
 func usage() {
 	width := 0
@@ -110,6 +228,11 @@ func usage() {
 		}
 		fmt.Println("")
 	}
+}
+
+func printHelpAndExit(helpText string) {
+	fmt.Println(helpText)
+	os.Exit(0)
 }
 
 func main() {
@@ -140,11 +263,23 @@ func main() {
 	// not part of this — see the README's Installation section.
 	// ---------------------------------------------------------------------
 	case "install":
+		// Check for help flag
+		for _, arg := range os.Args[2:] {
+			if arg == "-h" || arg == "--help" {
+				printHelpAndExit(helpInstall)
+			}
+		}
 		if err := cmd.InstallOperator(); err != nil {
 			fmt.Println("❌", err)
 			os.Exit(1)
 		}
 	case "uninstall":
+		// Check for help flag
+		for _, arg := range os.Args[2:] {
+			if arg == "-h" || arg == "--help" {
+				printHelpAndExit(helpUninstall)
+			}
+		}
 		if err := cmd.UninstallOperator(); err != nil {
 			fmt.Println("❌", err)
 			os.Exit(1)
@@ -158,6 +293,12 @@ func main() {
 	// which only ever touch the operator running on the cluster.
 	// ---------------------------------------------------------------------
 	case "self":
+		// Check for help flag first (before subcommand)
+		for _, arg := range os.Args[2:] {
+			if arg == "-h" || arg == "--help" {
+				printHelpAndExit(helpSelf)
+			}
+		}
 		if len(os.Args) < 3 {
 			usage()
 			os.Exit(1)
@@ -183,6 +324,12 @@ func main() {
 	// under the embedded dependencies/ tree.
 	// ---------------------------------------------------------------------
 	case "dependencies":
+		// Check for help flag first (before subcommand)
+		for _, arg := range os.Args[2:] {
+			if arg == "-h" || arg == "--help" {
+				printHelpAndExit(helpDependencies)
+			}
+		}
 		if len(os.Args) < 3 {
 			usage()
 			os.Exit(1)
@@ -236,6 +383,12 @@ func main() {
 	// CLUSTER
 	// ---------------------------------------------------------------------
 	case "cluster":
+		// Check for help flag first (before subcommand)
+		for _, arg := range os.Args[2:] {
+			if arg == "-h" || arg == "--help" {
+				printHelpAndExit(helpCluster)
+			}
+		}
 		if len(os.Args) < 3 {
 			usage()
 			os.Exit(1)
@@ -263,6 +416,45 @@ func main() {
 		default:
 			fmt.Println("Unknown cluster command:", os.Args[2])
 			usage()
+			os.Exit(1)
+		}
+	// ---------------------------------------------------------------------
+	// SECRETS — bootstrap/verify secrets in external secret stores
+	// ---------------------------------------------------------------------
+	case "secrets":
+		ctx := context.Background()
+		// Check for help flag first (before subcommand)
+		for _, arg := range os.Args[2:] {
+			if arg == "-h" || arg == "--help" {
+				printHelpAndExit(helpSecrets)
+			}
+		}
+		if len(os.Args) < 3 {
+			usage()
+			os.Exit(1)
+		}
+		subCmd := os.Args[2]
+		provider := ""
+		args := []string{}
+		if len(os.Args) >= 4 {
+			provider = os.Args[3]
+		}
+		if len(os.Args) >= 5 {
+			args = os.Args[4:]
+		}
+		var err error
+		switch subCmd {
+		case "bootstrap":
+			err = cmd.SecretsBootstrap(ctx, provider, args)
+		case "verify":
+			err = cmd.SecretsVerify(ctx, provider, args)
+		default:
+			fmt.Println("Unknown secrets command:", subCmd)
+			usage()
+			os.Exit(1)
+		}
+		if err != nil {
+			fmt.Println("❌", err)
 			os.Exit(1)
 		}
 	default:
