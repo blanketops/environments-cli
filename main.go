@@ -95,6 +95,10 @@ var usageEntries = [][]usageEntry{
 		{"bops-env secrets bootstrap <provider> [args...]", "Bootstrap BlanketOps secrets into a secret store (aws, azure, gcp, vault)"},
 		{"bops-env secrets verify <provider> [args...]", "Verify bootstrapped secrets exist in a secret store"},
 	},
+	{
+		{"bops-env report [flags]", "Send test/benchmark results to Allure server"},
+		{"bops-env report-server [flags]", "Start report receiver server that forwards to Allure"},
+	},
 }
 
 const (
@@ -207,6 +211,50 @@ Examples:
   bops-env secrets bootstrap aws us-east-1
   bops-env secrets verify gcp my-project
   bops-env secrets bootstrap vault http://localhost:8200 mytoken secret
+`
+
+	helpReport = `Send test/benchmark results to Allure server.
+
+Usage:
+  bops-env report [flags]
+
+Flags:
+  --server-url     Allure server URL (ALLURE_SERVER_URL)
+  --project-name   Allure project name (ALLURE_PROJECT_NAME)
+  --api-key        API key for Allure server (ALLURE_API_KEY)
+  --file           Input file (default: stdin)
+  --run-id         Run ID (default: timestamp)
+  --type           Test type: test, benchmark, scenario
+
+Examples:
+  # Send test results from file
+  bops-env report -f test-output.json
+  
+  # Send benchmark results from stdin
+  go test ./... -bench=. -benchmem -json | bops-env report --type benchmark
+  
+  # Send with custom run ID
+  bops-env report -f output.json --run-id "ci-123"
+
+Environment variables:
+  ALLURE_SERVER_URL    Base URL of Allure server (e.g. https://allure.blanketops.io)
+  ALLURE_PROJECT_NAME  Project name in Allure
+  ALLURE_API_KEY       API key for authentication
+`
+
+	helpReportServer = `Start a report receiver server that forwards to Allure.
+
+Usage:
+  bops-env report-server [flags]
+
+Flags:
+  --port       Server port (default: 8080)
+  --allure-url Allure server URL (ALLURE_SERVER_URL)
+
+Environment variables:
+  ALLURE_SERVER_URL    Base URL of Allure server
+  ALLURE_API_KEY       API key for Allure server
+  ALLURE_PROJECT_NAME  Project name in Allure
 `
 )
 
@@ -454,6 +502,25 @@ func main() {
 			os.Exit(1)
 		}
 		if err != nil {
+			fmt.Println("❌", err)
+			os.Exit(1)
+		}
+	// ---------------------------------------------------------------------
+	// REPORT — send test/benchmark results to Allure
+	// ---------------------------------------------------------------------
+	case "report":
+		if len(os.Args) >= 3 && (os.Args[2] == "-h" || os.Args[2] == "--help") {
+			printHelpAndExit(helpReport)
+		}
+		if err := cmd.ReportCommand().Execute(); err != nil {
+			fmt.Println("❌", err)
+			os.Exit(1)
+		}
+	case "report-server":
+		if len(os.Args) >= 3 && (os.Args[2] == "-h" || os.Args[2] == "--help") {
+			printHelpAndExit(helpReportServer)
+		}
+		if err := cmd.ReportServerCommand().Execute(); err != nil {
 			fmt.Println("❌", err)
 			os.Exit(1)
 		}
