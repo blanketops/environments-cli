@@ -1,7 +1,19 @@
+# =============================================================================
+# release.yml — Build, Sign and Publish a Release
+#
 # Tag-triggered release pipeline. Builds all release binaries, verifies and
 # signs them with Cosign (keyless/OIDC), generates GitHub build-provenance
 # attestations, updates the changelog on main, then publishes a GitHub
 # Release with the binaries and their signatures attached.
+#
+# Trigger scope:
+#   push tags matching v*
+#
+# Secrets required:
+#   APP_ID, APP_PRIVATE_KEY — GitHub App credentials
+#   RELEASER_APP_ID, RELEASER_APP_PRIVATE_KEY — the Releaser App
+#   GITHUB_TOKEN — for GitHub Release creation
+# =============================================================================
 name: Release
 on:
   push:
