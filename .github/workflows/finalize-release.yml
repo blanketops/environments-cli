@@ -80,7 +80,7 @@ jobs:
         with:
           command: verify
           release: ${{ github.event.inputs.version }}
-          app-id: ${{ secrets.RELEASER_APP_ID }}
+          client-id: ${{ secrets.RELEASER_APP_ID }}
           private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
 
       # A release pull request merged by hand leaves nothing to merge: the
