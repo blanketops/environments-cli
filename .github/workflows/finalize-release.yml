@@ -1,3 +1,6 @@
+# =============================================================================
+# finalize-release.yml — Merge, Tag, and Sync a Release
+#
 # Manually-triggered: second step of the release flow. Merges the
 # release/<version> branch into main, tags the release (which triggers
 # release.yml), syncs main back into develop, then deletes the release branch.
@@ -16,7 +19,9 @@
 #   GitHub then skipped every workflow the tag should have started. Where a
 #   changelog is generated it is rendered for the version with
 #   `git-cliff --tag` before the tag exists.
-
+#
+# Secrets required: none
+# =============================================================================
 name: Finalize Release
 on:
   workflow_dispatch:

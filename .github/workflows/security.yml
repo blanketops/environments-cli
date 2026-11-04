@@ -1,8 +1,17 @@
+# =============================================================================
+# security.yml — Known-Vulnerability Scanning (govulncheck)
+#
 # Known-vulnerability scanning (govulncheck) against the Go dependency
 # graph. Source-level static analysis lives separately in codeql.yml —
 # these two don't share a file just because they're both "security".
 # Triggers on push/PR like cli.yml, plus a weekly schedule so newly
 # disclosed CVEs are caught even when nothing in the repo has changed.
+#
+# Trigger scope:
+#   push to develop/main; pull_request to develop; weekly schedule
+#
+# Secrets required: none
+# =============================================================================
 name: Security
 
 on:
