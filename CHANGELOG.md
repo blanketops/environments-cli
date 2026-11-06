@@ -1,3 +1,31 @@
+## [0.2.0] - 2026-11-06
+
+### 🚀 Features
+
+- Add secrets bootstrap/verify CLI commands (#113)
+
+### 💼 Other
+
+- V0.2.0 (#122)
+- Merge release/v0.2.0 into main
+
+### 📚 Documentation
+
+- Standardize workflow header comments (#116)
+- Auto-generate code documentation [skip ci] (#119)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(finalize)* Continue when the release pull request is already merged
+- *(finalize)* Continue when the release pull request is already merged (#107)
+- Run the releaser in the release workflows
+- Run the releaser in the release workflows (#108)
+- *(ci)* Bump blanketops/environments-bots from 0.0.2 to 0.0.3 (#111)
+- *(ci)* Bump github/codeql-action from 4.39.0 to 4.39.1 (#112)
+- Sync develop with main after release/v0.1.9
+- Sync develop with main
+- Sync develop with main (#109)
+- *(developer)* Run the developer bot at v0.0.8 (#117)
 ## [0.1.9] - 2026-10-21
 
 ### 🐛 Bug Fixes
@@ -40,6 +68,7 @@
 - Land bot writes to main through pull requests (#100)
 - Sync develop with main
 - Sync develop with main (#102)
+- *(release)* Update changelog for v0.1.9 (#106)
 ## [0.1.8] - 2026-08-20
 
 ### 🐛 Bug Fixes
