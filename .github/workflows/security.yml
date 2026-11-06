@@ -28,31 +28,11 @@ permissions:
   contents: read
 
 jobs:
-  # ---------------------------------------------------------------------
-  # GOVULNCHECK — cross-references go.sum and the code paths that actually
-  # reach each dependency against Go's official vulnerability database.
-  # Far less noisy than a generic SCA scan since it only flags CVEs in
-  # code paths we actually call.
-  #
-  # Non-blocking by design: this project is pre-1.0 and the current
-  # toolchain already has known findings (see the summary this job posts).
-  # The point right now is visibility, not a red X on every PR — findings
-  # are tracked in the Security tab (SARIF) and in this job's summary
-  # either way. Revisit once the backlog of existing findings is cleared.
-  #
-  # JSON output always exits 0 by design (govulncheck's own convention —
-  # callers are expected to parse the payload, not rely on exit code), so
-  # the finding count here is derived from counting entries in the JSON,
-  # not from a shell exit code. An earlier version of this job piped
-  # text-mode output through `tee` and checked $?, which silently always
-  # reported success because GitHub Actions doesn't set `pipefail` by
-  # default — the last command in a pipe (tee) always succeeds.
-  # ---------------------------------------------------------------------
   govulncheck:
     runs-on: self-hosted
     permissions:
       contents: read
-      security-events: write # Required to upload SARIF findings
+      security-events: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7
@@ -61,29 +41,17 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          # The self-hosted runners keep Go's module and build caches on a
-          # persistent volume. setup-go's own cache would upload them again
-          # after every job, which on these runners hangs "Post Setup Go" for
-          # up to an hour and holds the runner.
           cache: false
 
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
-      # Redirection (not a pipe) — the exit code we care about here is
-      # jq's below, computed from the JSON content, so this is allowed
-      # to "fail" without continue-on-error tricks.
       - name: Run govulncheck (JSON)
         run: govulncheck -format json ./... > govulncheck.json || true
 
-      # SARIF for the Security tab — same scan, different output format.
       - name: Run govulncheck (SARIF)
         run: govulncheck -format sarif ./... > govulncheck.raw.sarif || true
 
-      # govulncheck emits duplicate entries in a rule's properties.tags and
-      # in a result's stacks, which fails GitHub's strict SARIF schema
-      # validation on upload (\"stacks contains duplicate item\"). Dedupe both
-      # before uploading rather than patching govulncheck itself.
       - name: Sanitize SARIF
         run: |
           if [ -s govulncheck.raw.sarif ]; then
@@ -102,8 +70,6 @@ jobs:
           sarif_file: govulncheck.sarif
           category: govulncheck
 
-      # Build a proper markdown table (advisory, package, fixed version,
-      # number of reachable call paths) instead of dumping raw CLI text.
       - name: Tabulate results
         id: tabulate
         run: |
@@ -135,8 +101,6 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Non-blocking: post a workflow warning annotation instead of
-      # failing the job. See the header comment for why.
       - name: Findings notice
         if: steps.tabulate.outputs.count != '0'
         run: echo "::warning::govulncheck found ${{ steps.tabulate.outputs.count }} advisories in reachable code paths — see the job summary and Security tab. Not blocking CI while the project is pre-1.0."
