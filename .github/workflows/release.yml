@@ -135,9 +135,9 @@ jobs:
 
       - name: Releaser complete
         if: always()
-        uses: blanketops/environments-bots/.github/actions/releaser@v0.0.7
+        uses: blanketops/environments-bots/.github/actions/releaser@v0.1.0
         with:
           command: complete
           release: ${{ github.ref_name }}
-          client-id: ${{ secrets.RELEASER_APP_ID }}
-          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.DEVELOPER_CLIENT_ID }}
+          private-key: ${{ secrets.DEVELOPER_APP_PRIVATE_KEY }}
