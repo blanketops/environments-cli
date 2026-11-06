@@ -21,7 +21,7 @@
 #   the API commit and the squash commit.
 #
 # Secrets required:
-#   APP_ID, APP_PRIVATE_KEY — GitHub App credentials
+#   APP_CLIENT_ID, APP_PRIVATE_KEY — GitHub App credentials
 # =============================================================================
 
 name: Code Docs
@@ -74,12 +74,7 @@ jobs:
           gomarkdoc \
             --output 'docs/code/{{.Dir}}.md' \
             ./...
-
-      # Through a pull request: main's `protect` ruleset takes changes only
-      # through a pull request with verified commits, and the App is not a
-      # bypass actor. hack/api-pr.sh opens one with a commit GitHub signs and
-      # squash-merges it; the skip marker in the message keeps that from
-      # starting workflows, including this one.
+            
       - name: Commit docs
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
