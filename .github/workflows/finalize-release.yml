@@ -71,22 +71,14 @@ jobs:
             chmod +x "${RUNNER_TEMP}/${script}"
           done
 
-      # The releaser (blanketops/environments-bots, as the Releaser App)
-      # checks before anything is merged: one open Release issue, nothing
-      # still open into release/<version> or in the version's milestone, no
-      # tag yet.
       - name: Releaser verify
-        uses: blanketops/environments-bots/.github/actions/releaser@v0.0.3
+        uses: blanketops/environments-bots/.github/actions/releaser@v0.0.7
         with:
           command: verify
           release: ${{ github.event.inputs.version }}
-          app-id: ${{ secrets.RELEASER_APP_ID }}
+          client-id: ${{ secrets.RELEASER_APP_ID }}
           private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
 
-      # A release pull request merged by hand leaves nothing to merge: the
-      # release branch is then not ahead of main, and opening a pull request
-      # for an empty difference fails (HTTP 422). The steps after this one
-      # still run on main as merged.
       - name: Merge release into main
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -104,13 +96,10 @@ jobs:
           fi
           "${RUNNER_TEMP}/api-merge-pr.sh" main "release/${VERSION}" \
             "release: merge release/${VERSION} into main"
-
-      # git-cliff is baked into the runner image (zenith-runner-toolchain).
+            
       - name: git-cliff version
         run: git-cliff --version
 
-      # --tag renders the commits since the last release under this version:
-      # the tag itself is only created after this file is committed.
       - name: Generate CHANGELOG.md
         run: git-cliff --config .cliff.toml --tag "${VERSION}" --output CHANGELOG.md
 
@@ -123,7 +112,6 @@ jobs:
           git fetch --quiet origin main
           git checkout --quiet --detach origin/main
 
-      # On the changelog commit: a tag on a [skip ci] commit starts no workflow.
       - name: Tag release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -144,8 +132,6 @@ jobs:
           "${RUNNER_TEMP}/api-merge.sh" develop main \
             "chore: sync develop with main after release/${VERSION}"
 
-      # A branch rule may forbid deleting release branches. The release is
-      # complete either way, so a refusal is reported, not failed on.
       - name: Delete release branch
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
