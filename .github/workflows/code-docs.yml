@@ -32,8 +32,6 @@ on:
       - main
   workflow_dispatch: {}
 
-# One docs run at a time: a second one waits instead of racing the first to
-# open a pull request on the same main.
 concurrency:
   group: code-docs
   cancel-in-progress: false
@@ -44,16 +42,14 @@ permissions:
 jobs:
   godoc:
     name: Generate Code Docs
-    # Zenith self-hosted pool. GitHub-hosted jobs do not start: the account
-    # is locked for hosted runners (billing).
     runs-on: self-hosted
     steps:
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_CLIENT_ID }}
           owner: blanketops
           repositories: environments-cli
 
