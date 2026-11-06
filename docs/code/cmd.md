@@ -14,6 +14,22 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+Copyright 2026 The BlanketOps Authors. Licensed under the Apache License, Version 2.0 \(the "License"\); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+```
+http://www.apache.org/licenses/LICENSE-2.0
+```
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+Copyright 2026 The BlanketOps Authors. Licensed under the Apache License, Version 2.0 \(the "License"\); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+```
+http://www.apache.org/licenses/LICENSE-2.0
+```
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
 ## Index
 
 - [Variables](<#variables>)
@@ -31,6 +47,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 - [func DependenciesInstall\(paths \[\]string\) error](<#DependenciesInstall>)
 - [func DependencyNames\(\) \[\]string](<#DependencyNames>)
 - [func EnsureCluster\(name string\) error](<#EnsureCluster>)
+- [func InitReportCommands\(root \*cobra.Command\)](<#InitReportCommands>)
 - [func InstallAll\(\) error](<#InstallAll>)
 - [func InstallDependency\(name string\) error](<#InstallDependency>)
 - [func InstallFluxCRDs\(\) error](<#InstallFluxCRDs>)
@@ -39,8 +56,12 @@ Unless required by applicable law or agreed to in writing, software distributed 
 - [func NewDynamicClient\(\) \(dynamic.Interface, \*rest.Config, error\)](<#NewDynamicClient>)
 - [func NewRESTMapper\(cfg \*rest.Config\) \(meta.RESTMapper, error\)](<#NewRESTMapper>)
 - [func NewRESTMapperPointerFor\(dc dynamic.Interface\) \(meta.RESTMapper, error\)](<#NewRESTMapperPointerFor>)
+- [func ReportCommand\(\) \*cobra.Command](<#ReportCommand>)
+- [func ReportServerCommand\(\) \*cobra.Command](<#ReportServerCommand>)
 - [func RunKnativeKourierSetup\(\) error](<#RunKnativeKourierSetup>)
 - [func RunUninstallScripts\(\) error](<#RunUninstallScripts>)
+- [func SecretsBootstrap\(ctx context.Context, provider string, args \[\]string\) error](<#SecretsBootstrap>)
+- [func SecretsVerify\(ctx context.Context, provider string, args \[\]string\) error](<#SecretsVerify>)
 - [func SelfInstall\(\) error](<#SelfInstall>)
 - [func SelfUninstall\(\) error](<#SelfUninstall>)
 - [func StatusAll\(\) error](<#StatusAll>)
@@ -53,8 +74,38 @@ Unless required by applicable law or agreed to in writing, software distributed 
 - [func WaitForAllNodesReady\(\) error](<#WaitForAllNodesReady>)
 - [func WaitForDaemonSetReady\(namespace, name string\) error](<#WaitForDaemonSetReady>)
 - [func WaitForDeploymentReady\(namespace, name string\) error](<#WaitForDeploymentReady>)
+- [type AWSBootstrapper](<#AWSBootstrapper>)
+  - [func NewAWSBootstrapper\(ctx context.Context, region, pathPrefix string\) \(\*AWSBootstrapper, error\)](<#NewAWSBootstrapper>)
+  - [func \(b \*AWSBootstrapper\) Bootstrap\(ctx context.Context, s \*SecretSet\) error](<#AWSBootstrapper.Bootstrap>)
+  - [func \(b \*AWSBootstrapper\) ProviderName\(\) string](<#AWSBootstrapper.ProviderName>)
+  - [func \(b \*AWSBootstrapper\) Verify\(ctx context.Context\) error](<#AWSBootstrapper.Verify>)
+- [type AzureBootstrapper](<#AzureBootstrapper>)
+  - [func NewAzureBootstrapper\(ctx context.Context, vaultURL string\) \(\*AzureBootstrapper, error\)](<#NewAzureBootstrapper>)
+  - [func \(b \*AzureBootstrapper\) Bootstrap\(ctx context.Context, s \*SecretSet\) error](<#AzureBootstrapper.Bootstrap>)
+  - [func \(b \*AzureBootstrapper\) ProviderName\(\) string](<#AzureBootstrapper.ProviderName>)
+  - [func \(b \*AzureBootstrapper\) Verify\(ctx context.Context\) error](<#AzureBootstrapper.Verify>)
 - [type Dependency](<#Dependency>)
   - [func FindDependency\(name string\) \(\*Dependency, error\)](<#FindDependency>)
+- [type GCPBootstrapper](<#GCPBootstrapper>)
+  - [func NewGCPBootstrapper\(ctx context.Context, projectID string\) \(\*GCPBootstrapper, error\)](<#NewGCPBootstrapper>)
+  - [func \(b \*GCPBootstrapper\) Bootstrap\(ctx context.Context, s \*SecretSet\) error](<#GCPBootstrapper.Bootstrap>)
+  - [func \(b \*GCPBootstrapper\) ProviderName\(\) string](<#GCPBootstrapper.ProviderName>)
+  - [func \(b \*GCPBootstrapper\) Verify\(ctx context.Context\) error](<#GCPBootstrapper.Verify>)
+- [type ReportClient](<#ReportClient>)
+  - [func NewReportClient\(config ReportConfig\) \*ReportClient](<#NewReportClient>)
+  - [func \(c \*ReportClient\) SendResults\(ctx context.Context, data ReportData\) error](<#ReportClient.SendResults>)
+- [type ReportConfig](<#ReportConfig>)
+- [type ReportData](<#ReportData>)
+- [type SecretBootstrapper](<#SecretBootstrapper>)
+- [type SecretSet](<#SecretSet>)
+  - [func DefaultSecretSet\(\) \(\*SecretSet, error\)](<#DefaultSecretSet>)
+- [type TestResult](<#TestResult>)
+  - [func ParseGoTestJSON\(r io.Reader\) \(\[\]TestResult, error\)](<#ParseGoTestJSON>)
+- [type VaultBootstrapper](<#VaultBootstrapper>)
+  - [func NewVaultBootstrapper\(addr, token, mount string\) \(\*VaultBootstrapper, error\)](<#NewVaultBootstrapper>)
+  - [func \(b \*VaultBootstrapper\) Bootstrap\(ctx context.Context, s \*SecretSet\) error](<#VaultBootstrapper.Bootstrap>)
+  - [func \(b \*VaultBootstrapper\) ProviderName\(\) string](<#VaultBootstrapper.ProviderName>)
+  - [func \(b \*VaultBootstrapper\) Verify\(ctx context.Context\) error](<#VaultBootstrapper.Verify>)
 
 
 ## Variables
@@ -191,6 +242,15 @@ func EnsureCluster(name string) error
 
 EnsureCluster ensures a Kubernetes cluster exists and is ready. For MVP, this is Kind\-only.
 
+<a name="InitReportCommands"></a>
+## func InitReportCommands
+
+```go
+func InitReportCommands(root *cobra.Command)
+```
+
+InitReportCommands adds report commands to the root command
+
 <a name="InstallAll"></a>
 ## func InstallAll
 
@@ -267,6 +327,24 @@ func NewRESTMapperPointerFor(dc dynamic.Interface) (meta.RESTMapper, error)
 
 NewRESTMapperPointerFor builds a restmapper backed by discovery; returned mapper is meta.RESTMapper.
 
+<a name="ReportCommand"></a>
+## func ReportCommand
+
+```go
+func ReportCommand() *cobra.Command
+```
+
+ReportCommand returns the cobra command for report operations
+
+<a name="ReportServerCommand"></a>
+## func ReportServerCommand
+
+```go
+func ReportServerCommand() *cobra.Command
+```
+
+ReportServerCommand returns the cobra command to start a report receiver server
+
 <a name="RunKnativeKourierSetup"></a>
 ## func RunKnativeKourierSetup
 
@@ -284,6 +362,24 @@ func RunUninstallScripts() error
 ```
 
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- RunUninstallScripts \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+
+<a name="SecretsBootstrap"></a>
+## func SecretsBootstrap
+
+```go
+func SecretsBootstrap(ctx context.Context, provider string, args []string) error
+```
+
+
+
+<a name="SecretsVerify"></a>
+## func SecretsVerify
+
+```go
+func SecretsVerify(ctx context.Context, provider string, args []string) error
+```
+
+
 
 <a name="SelfInstall"></a>
 ## func SelfInstall
@@ -393,6 +489,100 @@ func WaitForDeploymentReady(namespace, name string) error
 
 WaitForDeploymentReady waits until the named deployment reports all replicas ready.
 
+<a name="AWSBootstrapper"></a>
+## type AWSBootstrapper
+
+
+
+```go
+type AWSBootstrapper struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewAWSBootstrapper"></a>
+### func NewAWSBootstrapper
+
+```go
+func NewAWSBootstrapper(ctx context.Context, region, pathPrefix string) (*AWSBootstrapper, error)
+```
+
+
+
+<a name="AWSBootstrapper.Bootstrap"></a>
+### func \(\*AWSBootstrapper\) Bootstrap
+
+```go
+func (b *AWSBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error
+```
+
+
+
+<a name="AWSBootstrapper.ProviderName"></a>
+### func \(\*AWSBootstrapper\) ProviderName
+
+```go
+func (b *AWSBootstrapper) ProviderName() string
+```
+
+
+
+<a name="AWSBootstrapper.Verify"></a>
+### func \(\*AWSBootstrapper\) Verify
+
+```go
+func (b *AWSBootstrapper) Verify(ctx context.Context) error
+```
+
+
+
+<a name="AzureBootstrapper"></a>
+## type AzureBootstrapper
+
+
+
+```go
+type AzureBootstrapper struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewAzureBootstrapper"></a>
+### func NewAzureBootstrapper
+
+```go
+func NewAzureBootstrapper(ctx context.Context, vaultURL string) (*AzureBootstrapper, error)
+```
+
+
+
+<a name="AzureBootstrapper.Bootstrap"></a>
+### func \(\*AzureBootstrapper\) Bootstrap
+
+```go
+func (b *AzureBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error
+```
+
+
+
+<a name="AzureBootstrapper.ProviderName"></a>
+### func \(\*AzureBootstrapper\) ProviderName
+
+```go
+func (b *AzureBootstrapper) ProviderName() string
+```
+
+
+
+<a name="AzureBootstrapper.Verify"></a>
+### func \(\*AzureBootstrapper\) Verify
+
+```go
+func (b *AzureBootstrapper) Verify(ctx context.Context) error
+```
+
+
+
 <a name="Dependency"></a>
 ## type Dependency
 
@@ -426,5 +616,225 @@ func FindDependency(name string) (*Dependency, error)
 ```
 
 FindDependency looks up a registered dependency by name.
+
+<a name="GCPBootstrapper"></a>
+## type GCPBootstrapper
+
+
+
+```go
+type GCPBootstrapper struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewGCPBootstrapper"></a>
+### func NewGCPBootstrapper
+
+```go
+func NewGCPBootstrapper(ctx context.Context, projectID string) (*GCPBootstrapper, error)
+```
+
+
+
+<a name="GCPBootstrapper.Bootstrap"></a>
+### func \(\*GCPBootstrapper\) Bootstrap
+
+```go
+func (b *GCPBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error
+```
+
+
+
+<a name="GCPBootstrapper.ProviderName"></a>
+### func \(\*GCPBootstrapper\) ProviderName
+
+```go
+func (b *GCPBootstrapper) ProviderName() string
+```
+
+
+
+<a name="GCPBootstrapper.Verify"></a>
+### func \(\*GCPBootstrapper\) Verify
+
+```go
+func (b *GCPBootstrapper) Verify(ctx context.Context) error
+```
+
+
+
+<a name="ReportClient"></a>
+## type ReportClient
+
+ReportClient handles sending test results to Allure server
+
+```go
+type ReportClient struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewReportClient"></a>
+### func NewReportClient
+
+```go
+func NewReportClient(config ReportConfig) *ReportClient
+```
+
+NewReportClient creates a new report client
+
+<a name="ReportClient.SendResults"></a>
+### func \(\*ReportClient\) SendResults
+
+```go
+func (c *ReportClient) SendResults(ctx context.Context, data ReportData) error
+```
+
+SendResults sends test results to Allure server
+
+<a name="ReportConfig"></a>
+## type ReportConfig
+
+ReportConfig holds configuration for the report server/client
+
+```go
+type ReportConfig struct {
+    AllureServerURL string
+    ProjectName     string
+    APIKey          string
+}
+```
+
+<a name="ReportData"></a>
+## type ReportData
+
+ReportData represents test/benchmark results
+
+```go
+type ReportData struct {
+    ProjectName string                 `json:"project_name"`
+    RunID       string                 `json:"run_id"`
+    Timestamp   time.Time              `json:"timestamp"`
+    TestType    string                 `json:"test_type"` // "test", "benchmark", "scenario"
+    Results     []TestResult           `json:"results"`
+    Metadata    map[string]interface{} `json:"metadata,omitempty"`
+}
+```
+
+<a name="SecretBootstrapper"></a>
+## type SecretBootstrapper
+
+SecretBootstrapper defines the contract for bootstrapping BlanketOps secrets into a provider's secret store.
+
+```go
+type SecretBootstrapper interface {
+    // Bootstrap creates all BlanketOps secrets in the provider.
+    Bootstrap(ctx context.Context, secrets *SecretSet) error
+    // Verify lists the created secrets to confirm they exist.
+    Verify(ctx context.Context) error
+    // ProviderName returns the human-readable provider name.
+    ProviderName() string
+}
+```
+
+<a name="SecretSet"></a>
+## type SecretSet
+
+SecretSet represents the canonical set of BlanketOps secrets that must exist for the Environments operator to function. Each provider implementation creates these same logical secrets using provider\-native naming conventions.
+
+```go
+type SecretSet struct {
+    GitSSHPrivateKey      string
+    GitSSHPublicKey       string
+    GitKnownHosts         string
+    RegistryConfig        string
+    GitHubWebhookSecret   string
+    GitHubAPIToken        string
+    CrossplaneGitHubToken string
+}
+```
+
+<a name="DefaultSecretSet"></a>
+### func DefaultSecretSet
+
+```go
+func DefaultSecretSet() (*SecretSet, error)
+```
+
+DefaultSecretSet returns the standard BlanketOps secret set with values sourced from the local environment \(\~/.ssh, etc.\) and placeholders for secrets that must be provided by the user.
+
+<a name="TestResult"></a>
+## type TestResult
+
+TestResult represents a single test/benchmark result
+
+```go
+type TestResult struct {
+    Name        string                 `json:"name"`
+    Status      string                 `json:"status"` // "passed", "failed", "skipped"
+    Duration    float64                `json:"duration_ms"`
+    Package     string                 `json:"package"`
+    Output      string                 `json:"output,omitempty"`
+    Metrics     map[string]interface{} `json:"metrics,omitempty"` // for benchmarks
+    Annotations map[string]string      `json:"annotations,omitempty"`
+}
+```
+
+<a name="ParseGoTestJSON"></a>
+### func ParseGoTestJSON
+
+```go
+func ParseGoTestJSON(r io.Reader) ([]TestResult, error)
+```
+
+ParseGoTestJSON parses \`go test \-json\` output into TestResult slice
+
+<a name="VaultBootstrapper"></a>
+## type VaultBootstrapper
+
+
+
+```go
+type VaultBootstrapper struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewVaultBootstrapper"></a>
+### func NewVaultBootstrapper
+
+```go
+func NewVaultBootstrapper(addr, token, mount string) (*VaultBootstrapper, error)
+```
+
+
+
+<a name="VaultBootstrapper.Bootstrap"></a>
+### func \(\*VaultBootstrapper\) Bootstrap
+
+```go
+func (b *VaultBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error
+```
+
+
+
+<a name="VaultBootstrapper.ProviderName"></a>
+### func \(\*VaultBootstrapper\) ProviderName
+
+```go
+func (b *VaultBootstrapper) ProviderName() string
+```
+
+
+
+<a name="VaultBootstrapper.Verify"></a>
+### func \(\*VaultBootstrapper\) Verify
+
+```go
+func (b *VaultBootstrapper) Verify(ctx context.Context) error
+```
+
+
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
