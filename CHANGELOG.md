@@ -1,3 +1,12 @@
+## [0.2.1] - 2026-11-06
+
+### 💼 Other
+
+- Merge release/v0.2.1 into main
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.2.0
 ## [0.2.0] - 2026-11-06
 
 ### 🚀 Features
@@ -26,6 +35,7 @@
 - Sync develop with main
 - Sync develop with main (#109)
 - *(developer)* Run the developer bot at v0.0.8 (#117)
+- *(release)* Update changelog for v0.2.0 (#139)
 ## [0.1.9] - 2026-10-21
 
 ### 🐛 Bug Fixes
