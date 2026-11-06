@@ -1,9 +1,18 @@
-# CodeQL "Advanced" setup — GitHub's own template pattern (matrix +
-# build-mode), not the simplified default. One language today (Go,
-# autobuild), structured so adding another language later is a one-line
-# matrix entry instead of a rewrite. Split out of security.yml so code
-# scanning and dependency-vulnerability scanning (govulncheck) don't share
-# a file just because they're both "security".
+# =============================================================================
+# codeql.yml — CodeQL Static Analysis (Go)
+#
+# GitHub's own "Advanced" template pattern (matrix + build-mode), not the
+# simplified default. One language today (Go, autobuild), structured so
+# adding another language later is a one-line matrix entry instead of a
+# rewrite. Split out of security.yml so code scanning and
+# dependency-vulnerability scanning (govulncheck) don't share a file just
+# because they're both "security".
+#
+# Trigger scope:
+#   push to develop/main; pull_request to develop; weekly schedule
+#
+# Secrets required: none
+# =============================================================================
 name: "CodeQL Advanced"
 
 on:
