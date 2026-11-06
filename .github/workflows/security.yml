@@ -82,15 +82,19 @@ jobs:
 
       # govulncheck emits duplicate entries in a rule's properties.tags and
       # in a result's stacks, which fails GitHub's strict SARIF schema
-      # validation on upload ("stacks contains duplicate item"). Dedupe both
+      # validation on upload (\"stacks contains duplicate item\"). Dedupe both
       # before uploading rather than patching govulncheck itself.
       - name: Sanitize SARIF
         run: |
-          jq 'walk(if type == "object" then
-                     (if (.tags | type) == "array" then .tags |= unique else . end)
-                     | (if (.stacks | type) == "array" then .stacks |= unique else . end)
-                   else . end)' \
-            govulncheck.raw.sarif > govulncheck.sarif
+          if [ -s govulncheck.raw.sarif ]; then
+            jq 'walk(if type == "object" then
+                 (if (.tags | type) == "array" then .tags |= unique else . end)
+                 | (if (.stacks | type) == "array" then .stacks |= unique else . end)
+               else . end)' \
+               govulncheck.raw.sarif > govulncheck.sarif
+          else
+            echo '{"schemaVersion": 2, "results": []}' > govulncheck.sarif
+          fi
 
       - name: Upload SARIF to Security tab
         uses: github/codeql-action/upload-sarif@v4.39.1
@@ -113,7 +117,9 @@ jobs:
               echo "**Status:** ✅ No known vulnerabilities in reachable code paths."
             else
               echo "**Status:** ⚠️ $count advisories affect reachable code paths (non-blocking)."
-              echo ""
+            fi
+            echo ""
+            if [ "$count" -gt 0 ]; then
               echo "| Advisory | Package | Fixed in | Call paths |"
               echo "| --- | --- | --- | --- |"
               jq -s -r '
@@ -122,7 +128,7 @@ jobs:
                 | map(.[0] + {count: length})
                 | sort_by(.osv)
                 | .[]
-                | "| [\(.osv)](https://pkg.go.dev/vuln/\(.osv)) | \(.trace[0].package // .trace[0].module // "stdlib") | \(.fixed_version) | \(.count) |"
+                | "| [\\(.osv)](https://pkg.go.dev/vuln/\\(.osv)) | \\(.trace[0].package // .trace[0].module // \"stdlib\") | \\(.fixed_version) | \\(.count) |"
               ' govulncheck.json
               echo ""
               echo "Full findings, including call traces: **Security → Code scanning alerts**."
