@@ -1,3 +1,13 @@
+## [0.2.2] - 2026-11-07
+
+### 💼 Other
+
+- Merge release/v0.2.2 into main
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.2.1
+- *(mod)* Go mod tidy (#148)
 ## [0.2.1] - 2026-11-06
 
 ### 💼 Other
@@ -7,6 +17,7 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Sync develop with main after release/v0.2.0
+- *(release)* Update changelog for v0.2.1 (#145)
 ## [0.2.0] - 2026-11-06
 
 ### 🚀 Features
@@ -25,16 +36,16 @@
 
 ### ⚙️ Miscellaneous Tasks
 
+- Sync develop with main after release/v0.1.9
 - *(finalize)* Continue when the release pull request is already merged
 - *(finalize)* Continue when the release pull request is already merged (#107)
 - Run the releaser in the release workflows
 - Run the releaser in the release workflows (#108)
-- *(ci)* Bump blanketops/environments-bots from 0.0.2 to 0.0.3 (#111)
-- *(ci)* Bump github/codeql-action from 4.39.0 to 4.39.1 (#112)
-- Sync develop with main after release/v0.1.9
 - Sync develop with main
 - Sync develop with main (#109)
 - *(developer)* Run the developer bot at v0.0.8 (#117)
+- *(ci)* Bump blanketops/environments-bots from 0.0.2 to 0.0.3 (#111)
+- *(ci)* Bump github/codeql-action from 4.39.0 to 4.39.1 (#112)
 - *(release)* Update changelog for v0.2.0 (#139)
 ## [0.1.9] - 2026-10-21
 
