@@ -1,24 +1,16 @@
 # =============================================================================
-# release.yml — Build, Sign and Publish a Release
+# release.yml — Build, Sign and Publish a Release (environments-cli)
 #
-# Tag-triggered release pipeline. Builds all release binaries, verifies and
-# signs them with Cosign (keyless/OIDC), generates GitHub build-provenance
-# attestations, updates the changelog on main, then publishes a GitHub
-# Release with the binaries and their signatures attached.
-#
-# Trigger scope:
-#   push tags matching v*
-#
-# Secrets required:
-#   APP_ID, APP_PRIVATE_KEY — GitHub App credentials
-#   RELEASER_APP_ID, RELEASER_APP_PRIVATE_KEY — the Releaser App
-#   GITHUB_TOKEN — for GitHub Release creation
+# Tag-triggered release pipeline. Builds all release binaries, signs them
+# with Cosign (keyless/OIDC), generates GitHub build-provenance attestations,
+# and publishes a GitHub Release with the binaries and signatures attached.
 # =============================================================================
 name: Release
 on:
   push:
     tags:
       - "v*"
+
 permissions:
   contents: write
   id-token: write
@@ -40,6 +32,7 @@ jobs:
       - name: Checkout tag
         uses: actions/checkout@v7
         with:
+          token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
       - name: Setup Go
@@ -47,21 +40,6 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-
-      - name: Install mage
-        run: go install github.com/magefile/mage@latest
-
-      - name: Install git-cliff
-        run: |
-          GITCLIFF_VERSION="2.13.0"
-          curl -L "https://github.com/orhun/git-cliff/releases/download/v${GITCLIFF_VERSION}/git-cliff-${GITCLIFF_VERSION}-x86_64-unknown-linux-gnu.tar.gz" -o git-cliff.tar.gz
-          tar xzf git-cliff.tar.gz
-          sudo mv "git-cliff-${GITCLIFF_VERSION}/git-cliff" /usr/local/bin/git-cliff
-          rm -rf git-cliff.tar.gz "git-cliff-${GITCLIFF_VERSION}"
-          git-cliff --version
-
-      - name: Install Cosign
-        run: go install github.com/sigstore/cosign/v2/cmd/cosign@latest
 
       - name: Build binaries
         env:
@@ -78,13 +56,13 @@ jobs:
           test -s bin/bops-env-static-arm64
           ./bin/bops-env || true   # banner+usage exits 1 by design; proves it executes
 
-      - name: Sign binaries
+      - name: Sign binaries with Cosign (Keyless)
         run: |
           cosign sign-blob --yes --output-signature bin/bops-env.sig bin/bops-env
           cosign sign-blob --yes --output-signature bin/bops-env-static.sig bin/bops-env-static
           cosign sign-blob --yes --output-signature bin/bops-env-static-arm64.sig bin/bops-env-static-arm64
 
-      - name: Generate Attestations
+      - name: Generate Build Provenance Attestations
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
@@ -92,45 +70,46 @@ jobs:
             bin/bops-env-static
             bin/bops-env-static-arm64
 
-      - name: Checkout main
-        run: |
-          git checkout main
-          git pull origin main
-
-
       - name: Generate release notes
         run: git-cliff --config .cliff.toml --latest --output RELEASE_NOTES.md
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          body_path: RELEASE_NOTES.md
-          files: |
-            bin/bops-env
-            bin/bops-env-static
-            bin/bops-env-static-arm64
-            bin/bops-env.sig
-            bin/bops-env-static.sig
-            bin/bops-env-static-arm64.sig
+      - name: Create GitHub Release & Attach Assets via GitHub CLI (`gh`)
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --notes-file RELEASE_NOTES.md \
+            bin/bops-env \
+            bin/bops-env-static \
+            bin/bops-env-static-arm64 \
+            bin/bops-env.sig \
+            bin/bops-env-static.sig \
+            bin/bops-env-static-arm64.sig \
+            RELEASE_NOTES.md
 
       - name: Release Summary
         run: |
-          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           # 📦 Release Published: ${{ github.ref_name }}
+
           ## Completed
-          - Built bops-env, bops-env-static, bops-env-static-arm64 from tag ${{ github.ref_name }}
-          - Generated CHANGELOG.md using git-cliff and committed to main
-          - Signed all binaries with Cosign and generated build-provenance attestations
-          - Published GitHub Release with binaries and signatures attached
+          - Built `bops-env`, `bops-env-static`, and `bops-env-static-arm64` from tag `${{ github.ref_name }}`
+          - Signed all binaries with runner-baked Cosign keyless OIDC
+          - Generated GitHub build-provenance attestations
+          - Published GitHub Release with binaries, signatures, and release notes attached
+
           ## Assets
-          - bops-env ($(du -h bin/bops-env | cut -f1))
-          - bops-env-static ($(du -h bin/bops-env-static | cut -f1))
-          - bops-env-static-arm64 ($(du -h bin/bops-env-static-arm64 | cut -f1))
-          ## Verification
-          - **Sig:** \`cosign verify-blob --certificate-identity-regexp ".*" --cert-oidc-issuer "https://token.actions.githubusercontent.com" --signature bin/bops-env-static.sig bin/bops-env-static\`
-          - **Attest:** \`gh attest verify bin/bops-env-static --owner ${{ github.repository_owner }}\`
+          - `bops-env`
+          - `bops-env-static`
+          - `bops-env-static-arm64`
+          - Signature files (`.sig`)
+
+          ## Verification Commands
+          - **Sig Verification:** 
+            `cosign verify-blob --certificate-identity-regexp ".*" --cert-oidc-issuer "https://token.actions.githubusercontent.com" --signature bin/bops-env-static.sig bin/bops-env-static`
+          - **Attestation Verification:** 
+            `gh attest verify bin/bops-env-static --owner ${{ github.repository_owner }}`
           EOF
 
       - name: Releaser complete
