@@ -1,3 +1,12 @@
+## [0.2.3] - 2026-11-08
+
+### 💼 Other
+
+- Merge release/v0.2.3 into main
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.2.2
 ## [0.2.2] - 2026-11-07
 
 ### 💼 Other
@@ -8,6 +17,7 @@
 
 - Sync develop with main after release/v0.2.1
 - *(mod)* Go mod tidy (#148)
+- *(release)* Update changelog for v0.2.2 (#150)
 ## [0.2.1] - 2026-11-06
 
 ### 💼 Other
