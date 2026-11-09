@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.7
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/spf13/cobra v1.10.2
-	k8s.io/apimachinery v0.37.1
+	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v0.37.1
 )
 
