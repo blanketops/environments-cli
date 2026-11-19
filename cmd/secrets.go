@@ -33,7 +33,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 	"github.com/hashicorp/vault/api"
+	"golang.org/x/crypto/ssh"
 )
+
+// isEncryptedPrivateKey reports whether raw is a passphrase-protected SSH
+// private key. Headless build/CI consumers cannot decrypt such keys, so
+// bootstrapping one into a secret store yields silent "Permission denied
+// (publickey)" clone failures.
+func isEncryptedPrivateKey(raw []byte) bool {
+	_, err := ssh.ParseRawPrivateKey(raw)
+	var missing *ssh.PassphraseMissingError
+	return errors.As(err, &missing)
+}
 
 // SecretSet represents the canonical set of BlanketOps secrets that must exist
 // for the Environments operator to function. Each provider implementation
@@ -57,14 +68,20 @@ func DefaultSecretSet() (*SecretSet, error) {
 		return nil, fmt.Errorf("get home dir: %w", err)
 	}
 
-	sshPrivateKey, err := os.ReadFile(filepath.Join(home, ".ssh", "id_ed25519"))
+	privPath := envOr("BOPS_SSH_PRIVATE_KEY_FILE", filepath.Join(home, ".ssh", "id_ed25519"))
+	pubPath := envOr("BOPS_SSH_PUBLIC_KEY_FILE", filepath.Join(home, ".ssh", "id_ed25519.pub"))
+
+	sshPrivateKey, err := os.ReadFile(privPath)
 	if err != nil {
-		return nil, fmt.Errorf("read ssh private key: %w", err)
+		return nil, fmt.Errorf("read ssh private key %s: %w", privPath, err)
+	}
+	if isEncryptedPrivateKey(sshPrivateKey) {
+		return nil, fmt.Errorf("ssh private key %s is passphrase-encrypted; build/CI consumers cannot decrypt it. Provide a passphrase-less key via BOPS_SSH_PRIVATE_KEY_FILE", privPath)
 	}
 
-	sshPublicKey, err := os.ReadFile(filepath.Join(home, ".ssh", "id_ed25519.pub"))
+	sshPublicKey, err := os.ReadFile(pubPath)
 	if err != nil {
-		return nil, fmt.Errorf("read ssh public key: %w", err)
+		return nil, fmt.Errorf("read ssh public key %s: %w", pubPath, err)
 	}
 
 	knownHosts := sshKeyscan("github.com")
