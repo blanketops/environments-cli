@@ -73,11 +73,43 @@ func DefaultSecretSet() (*SecretSet, error) {
 		GitSSHPrivateKey:      string(sshPrivateKey),
 		GitSSHPublicKey:       string(sshPublicKey),
 		GitKnownHosts:         knownHosts,
-		RegistryConfig:        placeholderRegistryConfig(),
-		GitHubWebhookSecret:   "<REPLACE_WITH_WEBHOOK_SECRET>",
-		GitHubAPIToken:        "<REPLACE_WITH_GITHUB_TOKEN>",
-		CrossplaneGitHubToken: "<REPLACE_WITH_CROSSPLANE_GITHUB_TOKEN>",
+		RegistryConfig:        registryConfigFromEnv(),
+		GitHubWebhookSecret:   envOr("BOPS_GITHUB_WEBHOOK_SECRET", "<REPLACE_WITH_WEBHOOK_SECRET>"),
+		GitHubAPIToken:        envOr("BOPS_GITHUB_API_TOKEN", "<REPLACE_WITH_GITHUB_TOKEN>"),
+		CrossplaneGitHubToken: envOr("BOPS_CROSSPLANE_GITHUB_TOKEN", "<REPLACE_WITH_CROSSPLANE_GITHUB_TOKEN>"),
 	}, nil
+}
+
+// envOr returns the trimmed value of env var key, or fallback when unset/empty.
+func envOr(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return fallback
+}
+
+// registryConfigFromEnv builds a Docker registry auth config from the
+// environment. Precedence: BOPS_REGISTRY_CONFIG (full JSON) wins; otherwise
+// BOPS_GHCR_USER + BOPS_GHCR_TOKEN (+ optional BOPS_REGISTRY_HOST, default
+// ghcr.io) are assembled. Falls back to the placeholder when nothing is set.
+func registryConfigFromEnv() string {
+	if full := strings.TrimSpace(os.Getenv("BOPS_REGISTRY_CONFIG")); full != "" {
+		return full
+	}
+	user := strings.TrimSpace(os.Getenv("BOPS_GHCR_USER"))
+	token := strings.TrimSpace(os.Getenv("BOPS_GHCR_TOKEN"))
+	if user == "" || token == "" {
+		return placeholderRegistryConfig()
+	}
+	host := envOr("BOPS_REGISTRY_HOST", "ghcr.io")
+	auth := base64.StdEncoding.EncodeToString([]byte(user + ":" + token))
+	return fmt.Sprintf("{\"auths\":{%q:{\"username\":%q,\"password\":%q,\"auth\":%q}}}", host, user, token, auth)
+}
+
+// isPlaceholder reports whether v is an unfilled placeholder value. Bootstrap
+// routines must skip these so a dry run never clobbers real stored secrets.
+func isPlaceholder(v string) bool {
+	return strings.Contains(v, "<REPLACE_WITH_") || strings.Contains(v, "<USERNAME>:<TOKEN>") || strings.Contains(v, "<TOKEN>")
 }
 
 func sshKeyscan(host string) string {
@@ -427,6 +459,10 @@ func (b *VaultBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error {
 	}
 
 	for _, sec := range secrets {
+		if isPlaceholder(sec.value) {
+			fmt.Printf("  Skipping %s (no real value provided — leaving any existing value untouched)\n", sec.path)
+			continue
+		}
 		fmt.Printf("  Creating %s...\n", sec.path)
 		if err := b.writeSecret(ctx, sec.path, sec.value); err != nil {
 			return fmt.Errorf("write secret %s: %w", sec.path, err)
