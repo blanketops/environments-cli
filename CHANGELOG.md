@@ -1,53 +1,64 @@
-## [0.2.4] - 2026-11-08
+## [0.2.5] - 2026-11-21
+
+### 📚 Documentation
+
+- Auto-generate code documentation [skip ci] (#177)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(ci)* Bump blanketops/environments-bots from 0.1.0 to 0.1.1 (#162)
+- Sync develop with main after release/v0.2.4
+- Fix GitHub App token scope for release workflow (#166)
 
 ### 💼 Other
 
-- Merge release/v0.2.4 into main
+- Merge release/v0.2.5 into main
+## [0.2.4] - 2026-11-08
 
 ### ⚙️ Miscellaneous Tasks
 
 - Sync develop with main after release/v0.2.3
-## [0.2.3] - 2026-11-08
+- *(release)* Update changelog for v0.2.4 (#156)
 
 ### 💼 Other
 
-- Merge release/v0.2.3 into main
+- Merge release/v0.2.4 into main
+## [0.2.3] - 2026-11-08
 
 ### ⚙️ Miscellaneous Tasks
 
 - Sync develop with main after release/v0.2.2
 - *(release)* Update changelog for v0.2.3 (#153)
-## [0.2.2] - 2026-11-07
 
 ### 💼 Other
 
-- Merge release/v0.2.2 into main
+- Merge release/v0.2.3 into main
+## [0.2.2] - 2026-11-07
 
 ### ⚙️ Miscellaneous Tasks
 
 - Sync develop with main after release/v0.2.1
 - *(mod)* Go mod tidy (#148)
 - *(release)* Update changelog for v0.2.2 (#150)
-## [0.2.1] - 2026-11-06
 
 ### 💼 Other
 
-- Merge release/v0.2.1 into main
+- Merge release/v0.2.2 into main
+## [0.2.1] - 2026-11-06
 
 ### ⚙️ Miscellaneous Tasks
 
 - Sync develop with main after release/v0.2.0
 - *(release)* Update changelog for v0.2.1 (#145)
+
+### 💼 Other
+
+- Merge release/v0.2.1 into main
 ## [0.2.0] - 2026-11-06
 
 ### 🚀 Features
 
 - Add secrets bootstrap/verify CLI commands (#113)
-
-### 💼 Other
-
-- V0.2.0 (#122)
-- Merge release/v0.2.0 into main
 
 ### 📚 Documentation
 
@@ -67,6 +78,11 @@
 - *(ci)* Bump blanketops/environments-bots from 0.0.2 to 0.0.3 (#111)
 - *(ci)* Bump github/codeql-action from 4.39.0 to 4.39.1 (#112)
 - *(release)* Update changelog for v0.2.0 (#139)
+
+### 💼 Other
+
+- V0.2.0 (#122)
+- Merge release/v0.2.0 into main
 ## [0.1.9] - 2026-10-21
 
 ### 🐛 Bug Fixes
@@ -75,10 +91,6 @@
 - Use the verbatim Apache-2.0 license text (#99)
 - *(release)* Set VERSION for the finalize job
 - *(release)* Set VERSION for the finalize job (#104)
-
-### 💼 Other
-
-- Merge release/v0.1.9 into main
 
 ### 📚 Documentation
 
@@ -110,16 +122,16 @@
 - Sync develop with main
 - Sync develop with main (#102)
 - *(release)* Update changelog for v0.1.9 (#106)
+
+### 💼 Other
+
+- Merge release/v0.1.9 into main
 ## [0.1.8] - 2026-08-20
 
 ### 🐛 Bug Fixes
 
 - *(templates)* Move issue templates to the path GitHub actually reads
 - *(templates)* Remove Contract Change issue type -- doesn't belong here
-
-### 💼 Other
-
-- Merge release/v0.1.8 into main
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -131,6 +143,10 @@
 - *(ci)* Bump github/codeql-action from 4 to 4.37.4 (#61)
 - *(ci)* Bump actions/create-github-app-token from 2 to 3 (#67)
 - Bring issue/PR template fixes into main
+
+### 💼 Other
+
+- Merge release/v0.1.8 into main
 ## [0.1.7] - 2026-08-20
 
 ### 📚 Documentation
@@ -144,16 +160,16 @@
 - Sync develop with main after release/v0.1.6 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
 ## [0.1.6] - 2026-08-16
 
-### 💼 Other
-
-- Merge release/v0.1.6 into main
-
 ### ⚙️ Miscellaneous Tasks
 
 - Sync develop with main after release/v0.1.5
 - *(release)* Update changelog for v0.1.5
 - Sync develop with main after release/v0.1.5 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
 - *(ci)* Mint release tokens from the blanketops-environments App instead of GH_PAT (#64)
+
+### 💼 Other
+
+- Merge release/v0.1.6 into main
 ## [0.1.5] - 2026-08-14
 
 ### 🚀 Features
@@ -163,10 +179,6 @@
 ### 🐛 Bug Fixes
 
 - *(deps)* Bump golang.org/x/net to v0.55.0 (CVE-2026-25680) (#63)
-
-### 💼 Other
-
-- Merge release/v0.1.5 into main
 
 ### 🚜 Refactor
 
@@ -178,6 +190,10 @@
 - *(release)* Update changelog for v0.1.4
 - Sync develop with main after release/v0.1.4 (changelog commit missed by finalize-release.yml's race with the async Release workflow)
 - *(ci)* Bump actions/setup-go from 5 to 7 (#55)
+
+### 💼 Other
+
+- Merge release/v0.1.5 into main
 ## [0.1.4] - 2026-07-20
 
 ### 🚀 Features
@@ -188,24 +204,20 @@
 
 - Probe cluster-scoped resources for dependency status
 
-### 💼 Other
-
-- Merge release/v0.1.4 into main
-
 ### ⚙️ Miscellaneous Tasks
 
 - *(release)* Update changelog for v0.1.3
 - Sync develop with main after release/v0.1.3
+
+### 💼 Other
+
+- Merge release/v0.1.4 into main
 ## [0.1.3] - 2026-07-19
 
 ### 🚀 Features
 
 - Add Knative Serving + Kourier to the platform stack
 - Add per-dependency install/uninstall/status/list commands
-
-### 💼 Other
-
-- Merge release/v0.1.3 into main
 
 ### 📚 Documentation
 
@@ -215,26 +227,26 @@
 
 - Sync develop with main after release/v0.1.2
 - *(release)* Update changelog for v0.1.2
-## [0.1.2] - 2026-07-14
 
 ### 💼 Other
 
-- V0.1.2 (#52)
+- Merge release/v0.1.3 into main
+## [0.1.2] - 2026-07-14
 
 ### ⚙️ Miscellaneous Tasks
 
 - *(release)* Update changelog for v0.1.1
 - Remove cli.yml build workflow, duplicated by release.yml
 - Sync develop with main after release/v0.1.1
+
+### 💼 Other
+
+- V0.1.2 (#52)
 ## [0.1.1] - 2026-07-14
 
 ### 🚀 Features
 
 - ASCII banner with version/context, fix conflict retry and uninstall asset reads
-
-### 💼 Other
-
-- V0.1.1 (#51)
 
 ### 🚜 Refactor
 
@@ -244,20 +256,24 @@
 
 - *(release)* Update changelog for v0.1.0
 - Sync develop with main after release/v0.1.0
+
+### 💼 Other
+
+- V0.1.1 (#51)
 ## [0.1.0] - 2026-07-13
 
 ### 🚀 Features
 
 - Install/uninstall the operator alongside the CLI
 
-### 💼 Other
-
-- V0.1.0 (#49)
-
 ### ⚙️ Miscellaneous Tasks
 
 - *(release)* Update changelog for v0.0.9
 - Sync develop with main after release/v0.0.9
+
+### 💼 Other
+
+- V0.1.0 (#49)
 ## [0.0.9] - 2026-07-13
 
 ### 🚀 Features
@@ -272,21 +288,13 @@
 - Restore the original explicit install/uninstall pipeline
 - Restore the original explicit install/uninstall pipeline (#45)
 
-### 💼 Other
-
-- Skip calico dependency during manifest discovery
-- Fix manifest apply order — shipwright before cluster_strategies
-- Install Crossplane core before applying its Provider manifest
-- Restore dependencies install/uninstall, stub top-level install/uninstall
-- Restore dependencies install/uninstall, stub top-level install/uninstall (#35)
-- V0.0.9 (#20)
-
 ### 📚 Documentation
 
 - Refresh README, add provenance/signing section, rename to bops
 
 ### ⚙️ Miscellaneous Tasks
 
+- Require Cosign signing + attestation on CI builds, document workflows
 - Sync develop with main after release/v0.0.8
 - *(release)* Update changelog for v0.0.8
 - Fill in truncated Apache license header in cmd/all.go
@@ -308,6 +316,17 @@
 - *(ci)* Bump softprops/action-gh-release from 2 to 3
 - *(ci)* Bump softprops/action-gh-release from 2 to 3 (#40)
 - *(ci)* Bump actions/setup-go from 5 to 6 (#39)
+
+### 💼 Other
+
+- *(ci)* Update ci, resolve conflicts, sign and attest
+- *(ci)* Update ci, resolve conflicts, sign and attest
+- Skip calico dependency during manifest discovery
+- Fix manifest apply order — shipwright before cluster_strategies
+- Install Crossplane core before applying its Provider manifest
+- Restore dependencies install/uninstall, stub top-level install/uninstall
+- Restore dependencies install/uninstall, stub top-level install/uninstall (#35)
+- V0.0.9 (#20)
 ## [0.0.8] - 2026-07-05
 
 ### ⚙️ Miscellaneous Tasks
@@ -315,38 +334,35 @@
 - Sync develop with main after release/V0.0.7
 ## [V0.0.7] - 2026-07-05
 
+### ⚙️ Miscellaneous Tasks
+
+- Sync develop with main after release/v0.0.6
+- *(release)* Update changelog for v0.0.6
+
 ### 💼 Other
 
 - *(sanitize)* Update
 - *(docs)* Add license
 - *(docs)* Sanitize usage, shorten
-- *(ci)* Update ci, resolve conflicts, sign and attest
-- *(ci)* Update ci, resolve conflicts, sign and attest
-
-### ⚙️ Miscellaneous Tasks
-
-- Sync develop with main after release/v0.0.6
-- *(release)* Update changelog for v0.0.6
-- Require Cosign signing + attestation on CI builds, document workflows
 ## [0.0.6] - 2026-04-27
-
-### 💼 Other
-
-- Merge release/v0.0.6 into main
 
 ### ⚙️ Miscellaneous Tasks
 
 - *(buildTool)* Fix and update magefile
+
+### 💼 Other
+
+- Merge release/v0.0.6 into main
 ## [0.0.5] - 2026-04-26
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Update changelog for v0.0.4
 
 ### 💼 Other
 
 - *(deps)* Crossplane eso setup force
 - *(ci)* Add workflows for release
-
-### ⚙️ Miscellaneous Tasks
-
-- *(release)* Update changelog for v0.0.4
 ## [0.0.4] - 2026-03-17
 
 ### ⚙️ Miscellaneous Tasks

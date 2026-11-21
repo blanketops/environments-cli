@@ -60,7 +60,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 - [func ReportServerCommand\(\) \*cobra.Command](<#ReportServerCommand>)
 - [func RunKnativeKourierSetup\(\) error](<#RunKnativeKourierSetup>)
 - [func RunUninstallScripts\(\) error](<#RunUninstallScripts>)
-- [func SecretsBootstrap\(ctx context.Context, provider string, args \[\]string\) error](<#SecretsBootstrap>)
+- [func SecretsBootstrap\(ctx context.Context, provider string, args \[\]string, dryRun, skipConfirm bool\) error](<#SecretsBootstrap>)
 - [func SecretsVerify\(ctx context.Context, provider string, args \[\]string\) error](<#SecretsVerify>)
 - [func SelfInstall\(\) error](<#SelfInstall>)
 - [func SelfUninstall\(\) error](<#SelfUninstall>)
@@ -77,11 +77,13 @@ Unless required by applicable law or agreed to in writing, software distributed 
 - [type AWSBootstrapper](<#AWSBootstrapper>)
   - [func NewAWSBootstrapper\(ctx context.Context, region, pathPrefix string\) \(\*AWSBootstrapper, error\)](<#NewAWSBootstrapper>)
   - [func \(b \*AWSBootstrapper\) Bootstrap\(ctx context.Context, s \*SecretSet\) error](<#AWSBootstrapper.Bootstrap>)
+  - [func \(b \*AWSBootstrapper\) Preview\(secrets \*SecretSet\) string](<#AWSBootstrapper.Preview>)
   - [func \(b \*AWSBootstrapper\) ProviderName\(\) string](<#AWSBootstrapper.ProviderName>)
   - [func \(b \*AWSBootstrapper\) Verify\(ctx context.Context\) error](<#AWSBootstrapper.Verify>)
 - [type AzureBootstrapper](<#AzureBootstrapper>)
   - [func NewAzureBootstrapper\(ctx context.Context, vaultURL string\) \(\*AzureBootstrapper, error\)](<#NewAzureBootstrapper>)
   - [func \(b \*AzureBootstrapper\) Bootstrap\(ctx context.Context, s \*SecretSet\) error](<#AzureBootstrapper.Bootstrap>)
+  - [func \(b \*AzureBootstrapper\) Preview\(secrets \*SecretSet\) string](<#AzureBootstrapper.Preview>)
   - [func \(b \*AzureBootstrapper\) ProviderName\(\) string](<#AzureBootstrapper.ProviderName>)
   - [func \(b \*AzureBootstrapper\) Verify\(ctx context.Context\) error](<#AzureBootstrapper.Verify>)
 - [type Dependency](<#Dependency>)
@@ -89,6 +91,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 - [type GCPBootstrapper](<#GCPBootstrapper>)
   - [func NewGCPBootstrapper\(ctx context.Context, projectID string\) \(\*GCPBootstrapper, error\)](<#NewGCPBootstrapper>)
   - [func \(b \*GCPBootstrapper\) Bootstrap\(ctx context.Context, s \*SecretSet\) error](<#GCPBootstrapper.Bootstrap>)
+  - [func \(b \*GCPBootstrapper\) Preview\(secrets \*SecretSet\) string](<#GCPBootstrapper.Preview>)
   - [func \(b \*GCPBootstrapper\) ProviderName\(\) string](<#GCPBootstrapper.ProviderName>)
   - [func \(b \*GCPBootstrapper\) Verify\(ctx context.Context\) error](<#GCPBootstrapper.Verify>)
 - [type ReportClient](<#ReportClient>)
@@ -104,6 +107,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 - [type VaultBootstrapper](<#VaultBootstrapper>)
   - [func NewVaultBootstrapper\(addr, token, mount string\) \(\*VaultBootstrapper, error\)](<#NewVaultBootstrapper>)
   - [func \(b \*VaultBootstrapper\) Bootstrap\(ctx context.Context, s \*SecretSet\) error](<#VaultBootstrapper.Bootstrap>)
+  - [func \(b \*VaultBootstrapper\) Preview\(secrets \*SecretSet\) string](<#VaultBootstrapper.Preview>)
   - [func \(b \*VaultBootstrapper\) ProviderName\(\) string](<#VaultBootstrapper.ProviderName>)
   - [func \(b \*VaultBootstrapper\) Verify\(ctx context.Context\) error](<#VaultBootstrapper.Verify>)
 
@@ -367,7 +371,7 @@ func RunUninstallScripts() error
 ## func SecretsBootstrap
 
 ```go
-func SecretsBootstrap(ctx context.Context, provider string, args []string) error
+func SecretsBootstrap(ctx context.Context, provider string, args []string, dryRun, skipConfirm bool) error
 ```
 
 
@@ -518,6 +522,15 @@ func (b *AWSBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error
 
 
 
+<a name="AWSBootstrapper.Preview"></a>
+### func \(\*AWSBootstrapper\) Preview
+
+```go
+func (b *AWSBootstrapper) Preview(secrets *SecretSet) string
+```
+
+
+
 <a name="AWSBootstrapper.ProviderName"></a>
 ### func \(\*AWSBootstrapper\) ProviderName
 
@@ -561,6 +574,15 @@ func NewAzureBootstrapper(ctx context.Context, vaultURL string) (*AzureBootstrap
 
 ```go
 func (b *AzureBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error
+```
+
+
+
+<a name="AzureBootstrapper.Preview"></a>
+### func \(\*AzureBootstrapper\) Preview
+
+```go
+func (b *AzureBootstrapper) Preview(secrets *SecretSet) string
 ```
 
 
@@ -642,6 +664,15 @@ func NewGCPBootstrapper(ctx context.Context, projectID string) (*GCPBootstrapper
 
 ```go
 func (b *GCPBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error
+```
+
+
+
+<a name="GCPBootstrapper.Preview"></a>
+### func \(\*GCPBootstrapper\) Preview
+
+```go
+func (b *GCPBootstrapper) Preview(secrets *SecretSet) string
 ```
 
 
@@ -733,6 +764,8 @@ type SecretBootstrapper interface {
     Bootstrap(ctx context.Context, secrets *SecretSet) error
     // Verify lists the created secrets to confirm they exist.
     Verify(ctx context.Context) error
+    // Preview returns a human-readable description of what operations would be performed.
+    Preview(secrets *SecretSet) string
     // ProviderName returns the human-readable provider name.
     ProviderName() string
 }
@@ -815,6 +848,15 @@ func NewVaultBootstrapper(addr, token, mount string) (*VaultBootstrapper, error)
 
 ```go
 func (b *VaultBootstrapper) Bootstrap(ctx context.Context, s *SecretSet) error
+```
+
+
+
+<a name="VaultBootstrapper.Preview"></a>
+### func \(\*VaultBootstrapper\) Preview
+
+```go
+func (b *VaultBootstrapper) Preview(secrets *SecretSet) string
 ```
 
 
