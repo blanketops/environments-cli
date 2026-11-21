@@ -45,6 +45,68 @@ bops-env cluster up/down/status [name]  # cluster management
 
 ---
 
+## Secrets Bootstrap
+
+Bootstrap the canonical BlanketOps secret set (Git SSH keys, registry auth, GitHub tokens, Crossplane token) into an external secret store.
+
+```bash
+bops-env secrets bootstrap <provider> [args...] [flags]
+```
+
+### Providers
+
+| Provider | Arguments | Example |
+|----------|-----------|---------|
+| **aws** | `<region> [path-prefix]` | `bops-env secrets bootstrap aws us-east-1` |
+| **azure** | `<vault-url>` | `bops-env secrets bootstrap azure https://myvault.vault.azure.net` |
+| **gcp** | `<project-id>` | `bops-env secrets bootstrap gcp my-project` |
+| **vault** | `<addr> <token> [mount]` | `bops-env secrets bootstrap vault http://vault:8200 root secret` |
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run`, `--preview` | Show what operations would be performed without executing |
+| `-y`, `--yes` | Skip confirmation prompt (for automation) |
+
+### Secrets sourced from environment
+
+| Secret | Environment Variable | Fallback |
+|--------|---------------------|----------|
+| Git SSH private key | `BOPS_SSH_PRIVATE_KEY_FILE` | `~/.ssh/id_ed25519` |
+| Git SSH public key | `BOPS_SSH_PUBLIC_KEY_FILE` | `~/.ssh/id_ed25519.pub` |
+| Registry config | `BOPS_REGISTRY_CONFIG` or `BOPS_GHCR_USER` + `BOPS_GHCR_TOKEN` | placeholder |
+| GitHub webhook secret | `BOPS_GITHUB_WEBHOOK_SECRET` | placeholder |
+| GitHub API token | `BOPS_GITHUB_API_TOKEN` | placeholder |
+| Crossplane GitHub token | `BOPS_CROSSPLANE_GITHUB_TOKEN` | placeholder |
+
+Placeholders are skipped (not written) so a dry run never clobbers existing real values.
+
+### Examples
+
+```bash
+# Interactive — shows preview, asks to proceed
+bops-env secrets bootstrap aws us-east-1
+
+# Dry run — preview only, no changes
+bops-env secrets bootstrap aws us-east-1 --dry-run
+bops-env secrets bootstrap gcp my-project --preview
+
+# Automation — skip confirmation
+bops-env secrets bootstrap azure https://myvault.vault.azure.net -y
+bops-env secrets bootstrap vault http://vault:8200 token secret --yes
+```
+
+### Verify
+
+```bash
+bops-env secrets verify <provider> [args...]
+```
+
+Lists existing BlanketOps secrets in the provider to confirm they exist.
+
+---
+
 ## Design Goals
 - Air-gapped clusters, bare metal / edge nodes
 - Immutable appliances / Gokrazy
