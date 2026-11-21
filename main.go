@@ -184,7 +184,7 @@ Examples:
 	helpSecrets = `Bootstrap and verify BlanketOps secrets in external secret stores.
 
 Usage:
-  bops-env secrets <command> <provider> [args...]
+  bops-env secrets <command> <provider> [args...] [flags]
 
 Commands:
   bootstrap  Create all required BlanketOps secrets in the provider
@@ -207,10 +207,16 @@ Providers:
           Args: <addr> <token> [mount]
           Example: bops-env secrets bootstrap vault http://vault:8200 root secret
 
+Flags (for bootstrap):
+  --dry-run, --preview    Show what operations would be performed without executing
+  -y, --yes               Skip confirmation prompt (for automation)
+
 Examples:
   bops-env secrets bootstrap aws us-east-1
+  bops-env secrets bootstrap aws us-east-1 --dry-run
+  bops-env secrets bootstrap gcp my-project --preview
+  bops-env secrets bootstrap vault http://vault:8200 token secret -y
   bops-env secrets verify gcp my-project
-  bops-env secrets bootstrap vault http://localhost:8200 mytoken secret
 `
 
 	helpReport = `Send test/benchmark results to Allure server.
@@ -482,25 +488,36 @@ func main() {
 			os.Exit(1)
 		}
 		subCmd := os.Args[2]
-		provider := ""
-		args := []string{}
-		if len(os.Args) >= 4 {
-			provider = os.Args[3]
-		}
-		if len(os.Args) >= 5 {
-			args = os.Args[4:]
-		}
-		var err error
-		switch subCmd {
-		case "bootstrap":
-			err = cmd.SecretsBootstrap(ctx, provider, args)
-		case "verify":
-			err = cmd.SecretsVerify(ctx, provider, args)
-		default:
-			fmt.Println("Unknown secrets command:", subCmd)
-			usage()
-			os.Exit(1)
-		}
+			provider := ""
+			args := []string{}
+			dryRun := false
+			skipConfirm := false
+			if len(os.Args) >= 4 {
+				provider = os.Args[3]
+			}
+			// Parse remaining args for provider args and flags
+			for i := 4; i < len(os.Args); i++ {
+				arg := os.Args[i]
+				switch arg {
+				case "--dry-run", "--preview":
+					dryRun = true
+				case "-y", "--yes":
+					skipConfirm = true
+				default:
+					args = append(args, arg)
+				}
+			}
+			var err error
+			switch subCmd {
+			case "bootstrap":
+				err = cmd.SecretsBootstrap(ctx, provider, args, dryRun, skipConfirm)
+			case "verify":
+				err = cmd.SecretsVerify(ctx, provider, args)
+			default:
+				fmt.Println("Unknown secrets command:", subCmd)
+				usage()
+				os.Exit(1)
+			}
 		if err != nil {
 			fmt.Println("❌", err)
 			os.Exit(1)

@@ -157,6 +157,8 @@ type SecretBootstrapper interface {
 	Bootstrap(ctx context.Context, secrets *SecretSet) error
 	// Verify lists the created secrets to confirm they exist.
 	Verify(ctx context.Context) error
+	// Preview returns a human-readable description of what operations would be performed.
+	Preview(secrets *SecretSet) string
 	// ProviderName returns the human-readable provider name.
 	ProviderName() string
 }
@@ -253,6 +255,36 @@ func (b *AWSBootstrapper) Verify(ctx context.Context) error {
 	return nil
 }
 
+func (b *AWSBootstrapper) Preview(secrets *SecretSet) string {
+	var lines []string
+	lines = append(lines, fmt.Sprintf("Bootstrap preview for %s (region: %s)", b.ProviderName(), b.region))
+	lines = append(lines, "")
+	
+	secs := []struct {
+		name        string
+		description string
+		value       string
+	}{
+		{name: "environments/git/ssh-privatekey", description: "BlanketOps Environments git SSH private key for source cloning", value: secrets.GitSSHPrivateKey},
+		{name: "environments/git/ssh-publickey", description: "BlanketOps Environments git SSH public key", value: secrets.GitSSHPublicKey},
+		{name: "environments/git/known-hosts", description: "BlanketOps Environments git SSH known hosts (GitHub)", value: secrets.GitKnownHosts},
+		{name: "environments/registry/config", description: "BlanketOps Environments Docker registry auth config", value: secrets.RegistryConfig},
+		{name: "environments/github/webhook/secret", description: "BlanketOps Environments GitHub webhook HMAC secret", value: secrets.GitHubWebhookSecret},
+		{name: "environments/github/api/token", description: "BlanketOps Environments GitHub API token for environments controller", value: secrets.GitHubAPIToken},
+		{name: "environments/crossplane/github/token", description: "BlanketOps Environments Crossplane GitHub provider token", value: secrets.CrossplaneGitHubToken},
+	}
+	
+	for _, sec := range secs {
+		fullName := b.fullName(sec.name)
+		if isPlaceholder(sec.value) {
+			lines = append(lines, fmt.Sprintf("  ⏭  SKIP %s — %s (no real value provided)", fullName, sec.description))
+		} else {
+			lines = append(lines, fmt.Sprintf("  ✨  CREATE %s — %s", fullName, sec.description))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 // ---------------------------------------------------------------------------
 // Azure Key Vault
 // ---------------------------------------------------------------------------
@@ -331,6 +363,35 @@ func (b *AzureBootstrapper) Verify(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (b *AzureBootstrapper) Preview(secrets *SecretSet) string {
+	var lines []string
+	lines = append(lines, fmt.Sprintf("Bootstrap preview for %s", b.ProviderName()))
+	lines = append(lines, "")
+
+	secs := []struct {
+		name  string
+		value string
+	}{
+		{name: "environments--git--ssh-privatekey", value: secrets.GitSSHPrivateKey},
+		{name: "environments--git--ssh-publickey", value: secrets.GitSSHPublicKey},
+		{name: "environments--git--known-hosts", value: secrets.GitKnownHosts},
+		{name: "environments--registry--config", value: secrets.RegistryConfig},
+		{name: "environments--github--webhook--secret", value: secrets.GitHubWebhookSecret},
+		{name: "environments--github--api--token", value: secrets.GitHubAPIToken},
+		{name: "environments--crossplane--github--token", value: secrets.CrossplaneGitHubToken},
+	}
+
+	for _, sec := range secs {
+		flatName := b.flatName(fmt.Sprintf("blanketops-environments--%s", sec.name))
+		if isPlaceholder(sec.value) {
+			lines = append(lines, fmt.Sprintf("  ⏭  SKIP %s (no real value provided)", flatName))
+		} else {
+			lines = append(lines, fmt.Sprintf("  ✨  CREATE %s", flatName))
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // ---------------------------------------------------------------------------
@@ -430,6 +491,35 @@ func (b *GCPBootstrapper) Verify(ctx context.Context) error {
 	return nil
 }
 
+func (b *GCPBootstrapper) Preview(secrets *SecretSet) string {
+	var lines []string
+	lines = append(lines, fmt.Sprintf("Bootstrap preview for %s (project: %s)", b.ProviderName(), b.projectID))
+	lines = append(lines, "")
+
+	secs := []struct {
+		name  string
+		value string
+	}{
+		{name: "git_ssh-privatekey", value: secrets.GitSSHPrivateKey},
+		{name: "git_ssh-publickey", value: secrets.GitSSHPublicKey},
+		{name: "git_known-hosts", value: secrets.GitKnownHosts},
+		{name: "registry_config", value: secrets.RegistryConfig},
+		{name: "github_webhook_secret", value: secrets.GitHubWebhookSecret},
+		{name: "github_api_token", value: secrets.GitHubAPIToken},
+		{name: "crossplane_github_token", value: secrets.CrossplaneGitHubToken},
+	}
+
+	for _, sec := range secs {
+		flatName := b.flatName(fmt.Sprintf("blanketops_environments_%s", sec.name))
+		if isPlaceholder(sec.value) {
+			lines = append(lines, fmt.Sprintf("  ⏭  SKIP %s (no real value provided)", flatName))
+		} else {
+			lines = append(lines, fmt.Sprintf("  ✨  CREATE %s", flatName))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 // ---------------------------------------------------------------------------
 // HashiCorp Vault
 // ---------------------------------------------------------------------------
@@ -509,11 +599,39 @@ func (b *VaultBootstrapper) Verify(ctx context.Context) error {
 	return nil
 }
 
+func (b *VaultBootstrapper) Preview(secrets *SecretSet) string {
+	var lines []string
+	lines = append(lines, fmt.Sprintf("Bootstrap preview for %s (mount: %s)", b.ProviderName(), b.mount))
+	lines = append(lines, "")
+
+	secs := []struct {
+		path  string
+		value string
+	}{
+		{path: "blanketops/environments/git/ssh-privatekey", value: secrets.GitSSHPrivateKey},
+		{path: "blanketops/environments/git/ssh-publickey", value: secrets.GitSSHPublicKey},
+		{path: "blanketops/environments/git/known-hosts", value: secrets.GitKnownHosts},
+		{path: "blanketops/environments/registry/config", value: secrets.RegistryConfig},
+		{path: "blanketops/environments/github/webhook/secret", value: secrets.GitHubWebhookSecret},
+		{path: "blanketops/environments/github/api/token", value: secrets.GitHubAPIToken},
+		{path: "blanketops/environments/crossplane/github/token", value: secrets.CrossplaneGitHubToken},
+	}
+
+	for _, sec := range secs {
+		if isPlaceholder(sec.value) {
+			lines = append(lines, fmt.Sprintf("  ⏭  SKIP %s (no real value provided)", sec.path))
+		} else {
+			lines = append(lines, fmt.Sprintf("  ✨  CREATE %s", sec.path))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 // ---------------------------------------------------------------------------
 // CLI command wiring (called from main.go)
 // ---------------------------------------------------------------------------
 
-func SecretsBootstrap(ctx context.Context, provider string, args []string) error {
+func SecretsBootstrap(ctx context.Context, provider string, args []string, dryRun, skipConfirm bool) error {
 	var bootstrapper SecretBootstrapper
 	var err error
 
@@ -558,6 +676,27 @@ func SecretsBootstrap(ctx context.Context, provider string, args []string) error
 	secrets, err := DefaultSecretSet()
 	if err != nil {
 		return fmt.Errorf("prepare secret set: %w", err)
+	}
+
+	// Show preview of operations
+	preview := bootstrapper.Preview(secrets)
+	fmt.Println(preview)
+
+	if dryRun {
+		fmt.Println("\n🔍 Dry run complete — no changes made.")
+		return nil
+	}
+
+	// Ask for confirmation unless --yes flag is provided
+	if !skipConfirm {
+		fmt.Print("\nProceed with bootstrap? [y/N]: ")
+		var response string
+		fmt.Scanln(&response)
+		response = strings.ToLower(strings.TrimSpace(response))
+		if response != "y" && response != "yes" {
+			fmt.Println("Aborted.")
+			return nil
+		}
 	}
 
 	if err := bootstrapper.Bootstrap(ctx, secrets); err != nil {
