@@ -67,168 +67,170 @@ jobs:
     env:
       VERSION: ${{ github.event.inputs.version }}
     steps:
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_ID_PRIVATE_KEY }}
-          owner: blanketops
-          repositories: environments-cli
+    - name: Generate GitHub App token
+      id: app-token
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ vars.APP_CLIENT_ID }}
+        private-key: ${{ secrets.APP_ID_PRIVATE_KEY }}
+        owner: blanketops
+        repositories: environments-cli
 
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
+    - name: Checkout
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        token: ${{ steps.app-token.outputs.token }}
 
-      - name: Stage the API helpers
-        run: |
-          for script in api-commit.sh api-merge.sh api-merge-pr.sh api-pr.sh; do
-            git show "origin/release/${VERSION}:hack/${script}" > "${RUNNER_TEMP}/${script}" 2>/dev/null \
-              || git show "origin/main:hack/${script}" > "${RUNNER_TEMP}/${script}"
-            chmod +x "${RUNNER_TEMP}/${script}"
-          done
+    - name: Install cosign
+      uses: sigstore/cosign-installer@v3.7.0
+    - name: Stage the API helpers
+      run: |
+        for script in api-commit.sh api-merge.sh api-merge-pr.sh api-pr.sh; do
+          git show "origin/release/${VERSION}:hack/${script}" > "${RUNNER_TEMP}/${script}" 2>/dev/null \
+            || git show "origin/main:hack/${script}" > "${RUNNER_TEMP}/${script}"
+          chmod +x "${RUNNER_TEMP}/${script}"
+        done
 
-      - name: Generate Releaser App token
-        id: releaser-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.DEVELOPER_CLIENT_ID }}
-          private-key: ${{ secrets.DEVELOPER_APP_PRIVATE_KEY }}
-          owner: blanketops
-          repositories: ${{ github.event.repository.name }}
+    - name: Generate Releaser App token
+      id: releaser-token
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ vars.DEVELOPER_CLIENT_ID }}
+        private-key: ${{ secrets.DEVELOPER_APP_PRIVATE_KEY }}
+        owner: blanketops
+        repositories: ${{ github.event.repository.name }}
 
-      - name: Download and verify the releaser binary
-        env:
-          GH_TOKEN: ${{ steps.releaser-token.outputs.token }}
-          RELEASER_VERSION: v0.1.0
-        run: |
-          set -euo pipefail
-          gh release download "${RELEASER_VERSION}" -R blanketops/environments-bots \
-            -p releaser-linux-amd64 -p releaser-linux-amd64.sigstore.json \
-            -D "${RUNNER_TEMP}"
-          cosign verify-blob \
-            --bundle "${RUNNER_TEMP}/releaser-linux-amd64.sigstore.json" \
-            --certificate-identity "https://github.com/blanketops/environments-bots/.github/workflows/release.yml@refs/tags/${RELEASER_VERSION}" \
-            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            "${RUNNER_TEMP}/releaser-linux-amd64"
-          chmod +x "${RUNNER_TEMP}/releaser-linux-amd64"
+    - name: Download and verify the releaser binary
+      env:
+        GH_TOKEN: ${{ steps.releaser-token.outputs.token }}
+        RELEASER_VERSION: v0.1.0
+      run: |
+        set -euo pipefail
+        gh release download "${RELEASER_VERSION}" -R blanketops/environments-bots \
+          -p releaser-linux-amd64 -p releaser-linux-amd64.sigstore.json \
+          -D "${RUNNER_TEMP}"
+        cosign verify-blob \
+          --bundle "${RUNNER_TEMP}/releaser-linux-amd64.sigstore.json" \
+          --certificate-identity "https://github.com/blanketops/environments-bots/.github/workflows/release.yml@refs/tags/${RELEASER_VERSION}" \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+          "${RUNNER_TEMP}/releaser-linux-amd64"
+        chmod +x "${RUNNER_TEMP}/releaser-linux-amd64"
 
-      - name: Releaser verify
-        env:
-          GH_TOKEN: ${{ steps.releaser-token.outputs.token }}
-        run: '"${RUNNER_TEMP}/releaser-linux-amd64" verify -release "${VERSION}"'
+    - name: Releaser verify
+      env:
+        GH_TOKEN: ${{ steps.releaser-token.outputs.token }}
+      run: '"${RUNNER_TEMP}/releaser-linux-amd64" verify -release "${VERSION}"'
 
-      - name: Merge release into main
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          ahead=$(curl -sS --fail-with-body \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/compare/main...release/${VERSION}" \
-            | jq -r '.ahead_by')
-          if [ "$ahead" = "0" ]; then
-            echo "::notice::release/${VERSION} is already in main (its pull request was merged); nothing to merge"
-            git fetch --quiet origin main
-            git checkout --quiet --detach origin/main
-            exit 0
-          fi
-          "${RUNNER_TEMP}/api-merge-pr.sh" main "release/${VERSION}" \
-            "release: merge release/${VERSION} into main"
-
-      - name: Install gomarkdoc
-        run: |
-          go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-
-      - name: Generate code docs
-        run: |
-          mkdir -p docs/code
-          gomarkdoc --output 'docs/code/{{.Dir}}.md' ./...
-
-      - name: Commit code docs
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          "${RUNNER_TEMP}/api-pr.sh" main "release/${VERSION}-docs" \
-            "docs: auto-generate code documentation [skip ci]" docs/code
-          git fetch --quiet origin main
-          git checkout --quiet --detach origin/main
-
-      - name: git-cliff version
-        run: git-cliff --version
-
-      - name: Generate CHANGELOG.md
-        run: git-cliff --config .cliff.toml --tag "${VERSION}" --output CHANGELOG.md
-
-      - name: Commit changelog
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          "${RUNNER_TEMP}/api-pr.sh" main "release/${VERSION}-changelog" \
-            "chore(release): update changelog for ${VERSION}" CHANGELOG.md
-          git fetch --quiet origin main
-          git checkout --quiet --detach origin/main
-
-      - name: Tag release
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          sha=$(git rev-parse HEAD)
-          jq -n --arg ref "refs/tags/${VERSION}" --arg sha "$sha" '{ref: $ref, sha: $sha}' \
-            | curl -sS --fail-with-body -X POST \
-                -H "Authorization: bearer ${GH_TOKEN}" \
-                -H "Accept: application/vnd.github+json" \
-                --data-binary @- \
-                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs" >/dev/null
-          echo "Tagged ${sha} as ${VERSION}"
-          echo "tag_sha=${sha}" >> "$GITHUB_OUTPUT"
-
-      - name: Merge main back into develop
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          "${RUNNER_TEMP}/api-merge.sh" develop main \
-            "chore: sync develop with main after release/${VERSION}"
-
-      - name: Delete release branch
-        id: delete-branch
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          status=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
-            -H "Authorization: bearer ${GH_TOKEN}" \
+    - name: Merge release into main
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        ahead=$(curl -sS --fail-with-body \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs/heads/release/${VERSION}")
-          if [ "$status" = 204 ]; then
-            echo "deleted=yes" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::release/${VERSION} was not deleted (HTTP ${status}); a branch rule may protect it"
-            echo "deleted=no" >> "$GITHUB_OUTPUT"
-          fi
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/compare/main...release/${VERSION}" \
+          | jq -r '.ahead_by')
+        if [ "$ahead" = "0" ]; then
+          echo "::notice::release/${VERSION} is already in main (its pull request was merged); nothing to merge"
+          git fetch --quiet origin main
+          git checkout --quiet --detach origin/main
+          exit 0
+        fi
+        "${RUNNER_TEMP}/api-merge-pr.sh" main "release/${VERSION}" \
+          "release: merge release/${VERSION} into main"
 
-      - name: Release Summary
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY <<EOF
-          # 🎉 Release Finalized
+    - name: Install gomarkdoc
+      run: |
+        go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
+        echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-          **Version:** \`${{ github.event.inputs.version }}\`
+    - name: Generate code docs
+      run: |
+        mkdir -p docs/code
+        gomarkdoc --output 'docs/code/{{.Dir}}.md' ./...
 
-          ## Completed
+    - name: Commit code docs
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        "${RUNNER_TEMP}/api-pr.sh" main "release/${VERSION}-docs" \
+          "docs: auto-generate code documentation [skip ci]" docs/code
+        git fetch --quiet origin main
+        git checkout --quiet --detach origin/main
 
-          - Merged \`release/${{ github.event.inputs.version }}\` into \`main\`
-          - Regenerated the code docs and the changelog on \`main\`
-          - Created Git tag \`${{ github.event.inputs.version }}\` on the changelog commit
-          - Synced \`main\` back into \`develop\`
-          - Release branch deleted: ${{ steps.delete-branch.outputs.deleted }}
+    - name: git-cliff version
+      run: git-cliff --version
 
-          ## Branch Flow
+    - name: Generate CHANGELOG.md
+      run: git-cliff --config .cliff.toml --tag "${VERSION}" --output CHANGELOG.md
 
-          release/${{ github.event.inputs.version }} → main → develop
+    - name: Commit changelog
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        "${RUNNER_TEMP}/api-pr.sh" main "release/${VERSION}-changelog" \
+          "chore(release): update changelog for ${VERSION}" CHANGELOG.md
+        git fetch --quiet origin main
+        git checkout --quiet --detach origin/main
 
-          ## Next Steps
+    - name: Tag release
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        sha=$(git rev-parse HEAD)
+        jq -n --arg ref "refs/tags/${VERSION}" --arg sha "$sha" '{ref: $ref, sha: $sha}' \
+          | curl -sS --fail-with-body -X POST \
+              -H "Authorization: bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              --data-binary @- \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs" >/dev/null
+        echo "Tagged ${sha} as ${VERSION}"
+        echo "tag_sha=${sha}" >> "$GITHUB_OUTPUT"
 
-          - Creating the tag triggers the **Release** workflow, which builds and signs the binaries and publishes the GitHub Release.
-          EOF
+    - name: Merge main back into develop
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        "${RUNNER_TEMP}/api-merge.sh" develop main \
+          "chore: sync develop with main after release/${VERSION}"
+
+    - name: Delete release branch
+      id: delete-branch
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        status=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+          -H "Authorization: bearer ${GH_TOKEN}" \
+          -H "Accept: application/vnd.github+json" \
+          "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs/heads/release/${VERSION}")
+        if [ "$status" = 204 ]; then
+          echo "deleted=yes" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::release/${VERSION} was not deleted (HTTP ${status}); a branch rule may protect it"
+          echo "deleted=no" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Release Summary
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY <<EOF
+        # 🎉 Release Finalized
+
+        **Version:** \`${{ github.event.inputs.version }}\`
+
+        ## Completed
+
+        - Merged \`release/${{ github.event.inputs.version }}\` into \`main\`
+        - Regenerated the code docs and the changelog on \`main\`
+        - Created Git tag \`${{ github.event.inputs.version }}\` on the changelog commit
+        - Synced \`main\` back into \`develop\`
+        - Release branch deleted: ${{ steps.delete-branch.outputs.deleted }}
+
+        ## Branch Flow
+
+        release/${{ github.event.inputs.version }} → main → develop
+
+        ## Next Steps
+
+        - Creating the tag triggers the **Release** workflow, which builds and signs the binaries and publishes the GitHub Release.
+        EOF
